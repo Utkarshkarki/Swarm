@@ -44,37 +44,82 @@ When a user submits a real estate query, the system:
 ## 🏗️ Architecture
 
 ```
-User Query (Streamlit UI)
-        │
-        ▼
-┌─────────────────────────────────────────────────────┐
-│                  FastAPI Backend                     │
-│                                                     │
-│  POST /analyze                                      │
-│    │                                                │
-│    ├─► Classifier → selects relevant agent IDs     │
-│    │                                                │
-│    ├─► OAISS Orchestrator                          │
-│    │      │                                        │
-│    │      ├─ Phase 1: asyncio.gather (parallel)    │
-│    │      │    All agents → Round 1 (independent)  │
-│    │      │                                        │
-│    │      └─ Phase 2: Dynamic OAISS Loop           │
-│    │           Agent N reads ALL previous outputs  │
-│    │           Emits HANDOFF_SIGNAL → Agent M      │
-│    │           Loop exits on CONSENSUS or max_turns│
-│    │                                                │
-│    ├─► Aggregator → structured JSON output         │
-│    │                                                │
-│    └─► Logger → SQLite persistence                 │
-│                                                     │
-│  GET /history    POST /profile    GET /health       │
-└─────────────────────────────────────────────────────┘
-        │
-        ▼
-   SQLite (swarm.db)
-   └─ sessions table      ← query, R1, R2, output, timestamp
-   └─ user_profiles table ← budget, purpose, risk appetite, ...
+                    ┌──────────────────────────────────┐
+                    │         Streamlit Frontend        │
+                    │  • Query input                    │
+                    │  • Sidebar profile (budget,       │
+                    │    purpose, risk appetite)        │
+                    │  • Structured result display      │
+                    │  • Agent debate expanders         │
+                    │  • Clickable follow-up questions  │
+                    └──────────────┬───────────────────┘
+                                   │  HTTP (POST /analyze)
+                                   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                          FastAPI Backend                              │
+│                                                                      │
+│   POST /analyze                                                      │
+│   ├── 1. Load UserProfile          (memory.py → SQLite)             │
+│   ├── 2. Classify Query            (classifier.py)                  │
+│   │       └─► domains: [market, legal, financial, ...]              │
+│   │       └─► agent_ids: [broker, legal, banker, ...]               │
+│   │                                                                  │
+│   ├── 3. OAISS Orchestrator        (orchestrator.py)                │
+│   │       │                                                          │
+│   │       ├── Phase 1 — Parallel Round 1 (asyncio.gather)           │
+│   │       │     ├── 🏠 Broker Agent    ──► Round 1 response         │
+│   │       │     ├── ⚖️  Legal Agent    ──► Round 1 response         │
+│   │       │     ├── 🏦 Banker Agent    ──► Round 1 response         │
+│   │       │     ├── 📈 Investor Agent  ──► Round 1 response         │
+│   │       │     └── 🏗️  Developer Agent ──► Round 1 response        │
+│   │       │           (each call: 90s timeout via asyncio.wait_for) │
+│   │       │                                                          │
+│   │       └── Phase 2 — Dynamic OAISS Loop (non-fixed pipeline)     │
+│   │             Agent reads ALL prior outputs (enriched context)    │
+│   │             Emits HANDOFF_SIGNAL: <target> | <reason>           │
+│   │             ├── HANDOFF  → enqueue target agent (front)         │
+│   │             ├── CONSENSUS → exit loop immediately               │
+│   │             └── max_turns = 10 → forced exit                    │
+│   │                                                                  │
+│   ├── 4. Aggregator                (aggregator.py)                  │
+│   │       └─► Structured JSON: recommendation, risks, insights,     │
+│   │           confidence_score, agent_views, follow_up_questions    │
+│   │                                                                  │
+│   └── 5. Logger                   (logger.py)                       │
+│           └─► Persist full session to SQLite                        │
+│                                                                      │
+│   GET  /history/{username}   ──► past sessions (per user)           │
+│   GET  /history              ──► all sessions  (admin)              │
+│   POST /profile              ──► upsert user profile                │
+│   GET  /profile/{username}   ──► read user profile                  │
+│   GET  /health               ──► { "status": "ok" }                 │
+└──────────────────────────────┬───────────────────────────────────────┘
+                               │
+                               ▼
+              ┌────────────────────────────────┐
+              │         SQLite  (swarm.db)      │
+              │                                │
+              │  ┌─────────────────────────┐   │
+              │  │  sessions               │   │
+              │  │  ─────────────────────  │   │
+              │  │  id          INTEGER PK │   │
+              │  │  username    TEXT       │   │
+              │  │  query       TEXT       │   │
+              │  │  domains_json TEXT      │   │
+              │  │  round1_json TEXT       │   │
+              │  │  round2_json TEXT       │   │
+              │  │  output_json TEXT       │   │
+              │  │  created_at  TEXT       │   │
+              │  └─────────────────────────┘   │
+              │                                │
+              │  ┌─────────────────────────┐   │
+              │  │  user_profiles          │   │
+              │  │  ─────────────────────  │   │
+              │  │  username      TEXT PK  │   │
+              │  │  profile_json  TEXT     │   │
+              │  │  updated_at    TEXT     │   │
+              │  └─────────────────────────┘   │
+              └────────────────────────────────┘
 ```
 
 ### OAISS — Dynamic Control Flow
