@@ -223,17 +223,17 @@ def render_sidebar(username: str) -> None:
         data = _get(f"/profile/{username}") or {}
 
         with st.form("profile_form"):
-            st.markdown("**💰 Budget (₹ Lakhs)**")
+            st.markdown("**💰 Budget (₹ Rupees)**")
             col1, col2 = st.columns(2)
             with col1:
                 bmin = st.number_input(
-                    "Min", value=float(data.get("budget_min") or 0) / 1e5,
-                    min_value=0.0, step=5.0, format="%.0f"
+                    "Min", value=float(data.get("budget_min") or 0),
+                    min_value=0.0, step=10000.0, format="%.0f"
                 )
             with col2:
                 bmax = st.number_input(
-                    "Max", value=float(data.get("budget_max") or 0) / 1e5,
-                    min_value=0.0, step=5.0, format="%.0f"
+                    "Max", value=float(data.get("budget_max") or 0),
+                    min_value=0.0, step=10000.0, format="%.0f"
                 )
 
             purpose = st.selectbox(
@@ -275,8 +275,8 @@ def render_sidebar(username: str) -> None:
         if saved:
             payload = {
                 "username": username,
-                "budget_min": bmin * 1e5 if bmin else None,
-                "budget_max": bmax * 1e5 if bmax else None,
+                "budget_min": bmin if bmin else None,
+                "budget_max": bmax if bmax else None,
                 "location_preference": [x.strip() for x in locs_raw.split(",") if x.strip()],
                 "purpose": purpose,
                 "risk_appetite": risk,

@@ -125,3 +125,7 @@ __pycache__/
 .venv/
 venv/
 miro/
+
+# SQLite database — local data, never commit
+swarm.db
+*.db
