@@ -45,59 +45,59 @@ When a user submits a real estate query, the system:
 
 ```
                     ┌──────────────────────────────────┐
-                    │         Streamlit Frontend        │
-                    │  • Query input                    │
-                    │  • Sidebar profile (budget,       │
-                    │    purpose, risk appetite)        │
-                    │  • Structured result display      │
-                    │  • Agent debate expanders         │
-                    │  • Clickable follow-up questions  │
+                    │         Streamlit Frontend       |
+                    │  • Query input                   │
+                    │  • Sidebar profile (budget,      │
+                    │    purpose, risk appetite)       │
+                    │  • Structured result display     │
+                    │  • Agent debate expanders        │
+                    │  • Clickable follow-up questions │
                     └──────────────┬───────────────────┘
                                    │  HTTP (POST /analyze)
                                    ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                          FastAPI Backend                              │
+│                          FastAPI Backend                             │
 │                                                                      │
 │   POST /analyze                                                      │
-│   ├── 1. Load UserProfile          (memory.py → SQLite)             │
-│   ├── 2. Classify Query            (classifier.py)                  │
-│   │       └─► domains: [market, legal, financial, ...]              │
-│   │       └─► agent_ids: [broker, legal, banker, ...]               │
+│   ├── 1. Load UserProfile          (memory.py → SQLite)              │
+│   ├── 2. Classify Query            (classifier.py)                   │
+│   │       └─► domains: [market, legal, financial, ...]               │
+│   │       └─► agent_ids: [broker, legal, banker, ...]                │
 │   │                                                                  │
-│   ├── 3. OAISS Orchestrator        (orchestrator.py)                │
+│   ├── 3. OAISS Orchestrator        (orchestrator.py)                 │
 │   │       │                                                          │
-│   │       ├── Phase 1 — Parallel Round 1 (asyncio.gather)           │
-│   │       │     ├── 🏠 Broker Agent    ──► Round 1 response         │
+│   │       ├── Phase 1 — Parallel Round 1 (asyncio.gather)            │
+│   │       │     ├── 🏠 Broker Agent    ──► Round 1 response          |
 │   │       │     ├── ⚖️  Legal Agent    ──► Round 1 response         │
 │   │       │     ├── 🏦 Banker Agent    ──► Round 1 response         │
 │   │       │     ├── 📈 Investor Agent  ──► Round 1 response         │
 │   │       │     └── 🏗️  Developer Agent ──► Round 1 response        │
-│   │       │           (each call: 90s timeout via asyncio.wait_for) │
+│   │       │           (each call: 90s timeout via asyncio.wait_for)  │
 │   │       │                                                          │
-│   │       └── Phase 2 — Dynamic OAISS Loop (non-fixed pipeline)     │
-│   │             Agent reads ALL prior outputs (enriched context)    │
-│   │             Emits HANDOFF_SIGNAL: <target> | <reason>           │
-│   │             ├── HANDOFF  → enqueue target agent (front)         │
-│   │             ├── CONSENSUS → exit loop immediately               │
-│   │             └── max_turns = 10 → forced exit                    │
+│   │       └── Phase 2 — Dynamic OAISS Loop (non-fixed pipeline)      │
+│   │             Agent reads ALL prior outputs (enriched context)     │
+│   │             Emits HANDOFF_SIGNAL: <target> | <reason>            │
+│   │             ├── HANDOFF  → enqueue target agent (front)          │
+│   │             ├── CONSENSUS → exit loop immediately                │
+│   │             └── max_turns = 10 → forced exit                     │
 │   │                                                                  │
-│   ├── 4. Aggregator                (aggregator.py)                  │
-│   │       └─► Structured JSON: recommendation, risks, insights,     │
-│   │           confidence_score, agent_views, follow_up_questions    │
+│   ├── 4. Aggregator                (aggregator.py)                   │
+│   │       └─► Structured JSON: recommendation, risks, insights,      │
+│   │           confidence_score, agent_views, follow_up_questions     │
 │   │                                                                  │
-│   └── 5. Logger                   (logger.py)                       │
-│           └─► Persist full session to SQLite                        │
+│   └── 5. Logger                   (logger.py)                        │
+│           └─► Persist full session to SQLite                         │
 │                                                                      │
-│   GET  /history/{username}   ──► past sessions (per user)           │
-│   GET  /history              ──► all sessions  (admin)              │
-│   POST /profile              ──► upsert user profile                │
-│   GET  /profile/{username}   ──► read user profile                  │
-│   GET  /health               ──► { "status": "ok" }                 │
+│   GET  /history/{username}   ──► past sessions (per user)            │
+│   GET  /history              ──► all sessions  (admin)               │
+│   POST /profile              ──► upsert user profile                 │
+│   GET  /profile/{username}   ──► read user profile                   │
+│   GET  /health               ──► { "status": "ok" }                  │
 └──────────────────────────────┬───────────────────────────────────────┘
                                │
                                ▼
               ┌────────────────────────────────┐
-              │         SQLite  (swarm.db)      │
+              │         SQLite  (swarm.db)     | 
               │                                │
               │  ┌─────────────────────────┐   │
               │  │  sessions               │   │
