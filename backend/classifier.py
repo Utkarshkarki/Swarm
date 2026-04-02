@@ -1,4 +1,5 @@
 from typing import List
+#Maping Query to Domains
 
 DOMAIN_KEYWORDS: dict[str, List[str]] = {
     "legal": [
