@@ -26,11 +26,12 @@ logger = logging.getLogger(__name__)
 
 MAX_TURNS = 10  # absolute safety cap
 
-# ── Signal ─────────────────────────────────────────────────────────────────────
+#  Signal 
 
 _SIGNAL_RE = re.compile(r"HANDOFF_SIGNAL:\s*([A-Z_]+)\s*\|\s*(.*)", re.IGNORECASE)
 
 # maps anything the LLM might write → canonical agent_id
+# This  is normalization layer
 _ALIAS: Dict[str, Optional[str]] = {
     "legal": "legal", "legal_agent": "legal",
     "broker": "broker", "broker_agent": "broker",
@@ -68,8 +69,9 @@ def _strip_signal(text: str) -> str:
     return _SIGNAL_RE.sub("", text).strip()
 
 
-# ── Turn record ─────────────────────────────────────────────────────────────────
-
+# Turn record 
+# Stores one complete step of the conversation so the system can track,
+# Debug, and understand the entire multi-agent interaction.
 @dataclass
 class OAISSTurn:
     number: int
@@ -80,7 +82,7 @@ class OAISSTurn:
     is_round1: bool = False
 
 
-# ── Orchestrator ────────────────────────────────────────────────────────────────
+#  Orchestrator 
 
 class OAISSOrchestrator:
     """
@@ -96,7 +98,7 @@ class OAISSOrchestrator:
         self.all_agents = all_agents
         self.max_turns = max_turns
 
-    # ── Internal helpers ────────────────────────────────────────────────────────
+    # Internal helpers 
 
     async def _safe_round1(
         self, agent: BaseAgent, query: str, profile: Optional[UserProfile]
@@ -148,7 +150,7 @@ class OAISSOrchestrator:
             return True
         return False
 
-    # ── Main orchestration loop ─────────────────────────────────────────────────
+    #  Main orchestration loop 
 
     async def run(
         self,
@@ -166,7 +168,7 @@ class OAISSOrchestrator:
         done: set[str] = set()
         turn_n = 0
 
-        # ── Phase 1: Round 1 (parallel, independent) ──────────────────────────
+        # Phase 1: Round 1 (parallel, independent) 
         logger.info(
             "OAISS Phase 1 — Round 1 (%d agents): %s",
             len(initial_agents),
@@ -253,7 +255,7 @@ class OAISSOrchestrator:
 
         return self._build_outputs(round1_map, round2_map)
 
-    # ── Output builder ──────────────────────────────────────────────────────────
+    #  Output builder 
 
     def _build_outputs(
         self,
