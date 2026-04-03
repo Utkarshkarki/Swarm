@@ -5,6 +5,9 @@ from typing import Any, Dict, List
 
 from .config import settings
 
+#store sessions
+#retrieve sessions
+#show history
 
 async def log_session(
     username: str,
