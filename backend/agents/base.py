@@ -9,7 +9,7 @@ from openai import AsyncOpenAI
 from ..config import settings
 from ..models import UserProfile
 
-
+# Foundation Agent
 def _profile_context(profile: Optional[UserProfile]) -> str:
     if not profile:
         return "No user profile provided."
