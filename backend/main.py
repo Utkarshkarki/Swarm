@@ -15,7 +15,7 @@ from .agents.investor import InvestorAgent
 from .agents.legal import LegalAgent
 from .classifier import classify_query, get_active_agent_ids
 from .database import init_db
-from .debate import run_debate
+from .orchestrator import OAISSOrchestrator
 from .logger import get_all_history, get_history, log_session
 from .memory import get_profile, save_profile
 from .models import AnalysisResult, AnalyzeRequest, ProfileUpdateRequest, UserProfile
@@ -85,8 +85,9 @@ async def analyze(request: AnalyzeRequest) -> AnalysisResult:
         [a.agent_name for a in active_agents],
     )
 
-    # 3. Two-round debate (async parallel per round)
-    agent_rounds = await run_debate(active_agents, request.query, profile)
+    # 3. OAISS dynamic orchestration (Round 1 parallel + dynamic handoff loop)
+    orchestrator = OAISSOrchestrator(ALL_AGENTS)
+    agent_rounds = await orchestrator.run(request.query, profile, active_agents)
 
     # 4. Aggregate → strict JSON output
     result = await aggregate(request.query, profile, agent_rounds)
