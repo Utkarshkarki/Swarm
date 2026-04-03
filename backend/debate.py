@@ -10,6 +10,7 @@ from .models import AgentRoundOutput, UserProfile
 
 logger = logging.getLogger(__name__)
 
+# Debating agents
 
 async def _round1(
     agents: List[BaseAgent], query: str, profile: Optional[UserProfile]
