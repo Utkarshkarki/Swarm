@@ -186,29 +186,222 @@ def _push_followup(q: str) -> None:
 
 def render_login() -> None:
     st.markdown(
-        "<h1 style='text-align:center;font-size:2.6rem;font-weight:700;"
-        "background:linear-gradient(90deg,#7c3aed,#06b6d4);-webkit-background-clip:text;"
-        "-webkit-text-fill-color:transparent;'>🏘️ RE Advisory</h1>",
+        """
+        <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
+        
+        /* Hide Streamlit Header, Footer, and Sidebar */
+        #MainMenu {visibility: hidden;}
+        header {visibility: hidden;}
+        footer {visibility: hidden;}
+        [data-testid="collapsedControl"] {display: none;}
+        
+        /* App Background with subtle real estate image and dark overlay */
+        .stApp {
+            background: linear-gradient(rgba(15, 23, 42, 0.85), rgba(30, 27, 75, 0.95)), 
+                        url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop') no-repeat center center fixed !important;
+            background-size: cover !important;
+            color: white;
+        }
+        
+        /* Glassmorphism Card on the middle column */
+        [data-testid="stHorizontalBlock"]:first-of-type > [data-testid="column"]:nth-of-type(2) {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 3rem 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 12vh;
+        }
+        
+        /* Typography & Logo */
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 0.8rem;
+        }
+
+        .logo-mark {
+            width: 52px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 0 25px rgba(125, 211, 252, 0.35);
+            backdrop-filter: blur(8px);
+        }
+
+        .login-title {
+            font-size: 3.2rem;
+            font-weight: 800;
+            font-family: 'Inter', 'Roboto', sans-serif;
+            background: linear-gradient(90deg, #ffffff 0%, #e0f2fe 30%, #7dd3fc 50%, #e0f2fe 70%, #ffffff 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            letter-spacing: -1px;
+            animation: shimmer 6s linear infinite;
+            filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.6));
+            margin: 0;
+        }
+        
+        .login-subtitle {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2.8rem;
+            letter-spacing: 1.5px;
+            text-align: center;
+            text-transform: uppercase;
+            line-height: 1.6;
+        }
+        
+        /* Google Button Style Override */
+        .stButton>button {
+            width: 100%;
+            border-radius: 4px;
+            height: 44px;
+            font-weight: 500;
+            font-family: 'Roboto', sans-serif;
+            background: white !important;
+            color: #3c4043 !important;
+            border: 1px solid #dadce0 !important;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .stButton>button:hover {
+            background: #f8f9fa !important;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.30), 0 1px 3px 1px rgba(60,64,67,0.15) !important;
+            color: #3c4043 !important;
+            border: 1px solid #dadce0 !important;
+            transform: none !important;
+        }
+        
+        /* Divider */
+        .divider {
+            width: 100%;
+            height: 1px;
+            background: rgba(255,255,255,0.1);
+            margin: 2.5rem 0 1.5rem 0;
+        }
+        
+        /* Features Row Badges */
+        .feature-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .feature-item:hover {
+            transform: translateY(-5px);
+        }
+        .icon-container {
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.05);
+            font-size: 26px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+        }
+        .feature-item:hover .icon-container {
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.15);
+            border-color: rgba(255,255,255,0.4);
+        }
+        .feature-text {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #f8fafc;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+        </style>
+        """,
         unsafe_allow_html=True,
     )
-    st.markdown(
-        "<p style='text-align:center;color:rgba(255,255,255,0.55);margin-bottom:2rem;'>"
-        "Multi-Agent Real Estate Advisory System · Powered by Open-Source LLMs</p>",
-        unsafe_allow_html=True,
-    )
-    col = st.columns([1, 2, 1])[1]
+
+    col = st.columns([1, 1.2, 1])[1]
     with col:
-        with st.form("login_form"):
-            username = st.text_input(
-                "Username", placeholder="e.g. priya_investor", key="login_username"
+        st.markdown(
+            """
+            <div class="logo-container">
+                <div class="logo-mark">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/>
+                        <path d="M9 22v-4h6v4"/>
+                        <path d="M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01"/>
+                    </svg>
+                </div>
+                <div class="login-title">RE Advisory</div>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+        st.markdown('<div class="login-subtitle">Enterprise Real Estate Advisory System <br> Powered by Open-Source AI</div>', unsafe_allow_html=True)
+        
+        st.markdown(
+            "<p style='color: #e2e8f0; font-size: 0.95rem; margin-bottom: 1.2rem; text-align: center; font-weight: 500;'>Sign in securely to your workspace</p>", 
+            unsafe_allow_html=True
+        )
+        
+        if st.button("G  Continue with Google", use_container_width=True):
+            st.login()
+            
+        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+        
+        # Value Proposition Features
+        f1, f2, f3 = st.columns(3)
+        with f1:
+            st.markdown(
+                """
+                <div class="feature-item">
+                    <div class="icon-container">🏢</div>
+                    <div class="feature-text">SMART<br>PORTFOLIOS</div>
+                </div>
+                """, unsafe_allow_html=True
             )
-            submitted = st.form_submit_button("Enter Advisory Panel →", use_container_width=True)
-        if submitted:
-            if not username.strip():
-                st.error("Please enter a username.")
-            else:
-                st.session_state["username"] = username.strip()
-                st.rerun()
+        with f2:
+            st.markdown(
+                """
+                <div class="feature-item">
+                    <div class="icon-container">🤖</div>
+                    <div class="feature-text">AI<br>ADVISORY</div>
+                </div>
+                """, unsafe_allow_html=True
+            )
+        with f3:
+            st.markdown(
+                """
+                <div class="feature-item">
+                    <div class="icon-container">📊</div>
+                    <div class="feature-text">MARKET<br>INSIGHTS</div>
+                </div>
+                """, unsafe_allow_html=True
+            )
 
 
 # ── Sidebar profile ────────────────────────────────────────────────────────────
@@ -292,9 +485,7 @@ def render_sidebar(username: str) -> None:
 
         st.divider()
         if st.button("🚪 Log out", use_container_width=True):
-            del st.session_state["username"]
-            st.session_state.pop("result", None)
-            st.rerun()
+            st.logout()
 
 
 # ── Results renderer ───────────────────────────────────────────────────────────
@@ -436,11 +627,12 @@ def render_history(username: str) -> None:
 # ── Main app ───────────────────────────────────────────────────────────────────
 
 def main() -> None:
-    if "username" not in st.session_state:
+    if not st.user.is_logged_in:  # type: ignore[attr-defined]
         render_login()
         return
 
-    username = st.session_state["username"]
+    username = st.user.email  # type: ignore[attr-defined]
+    st.session_state["username"] = username
     render_sidebar(username)
 
     # Header
