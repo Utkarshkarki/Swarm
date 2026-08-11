@@ -262,22 +262,114 @@ def render_results(model: str, experts: list[dict[str, str]], final_advice: str)
 def render_login_page() -> None:
     """Display a friendly login screen for unauthenticated visitors."""
     st.set_page_config(
-        page_title="Real Estate Swarm — Sign In",
-        page_icon="🔐",
-        layout="centered",
+        page_title="RE Advisory — Sign In",
+        page_icon="🏢",
+        layout="wide",
+        initial_sidebar_state="collapsed",
     )
 
-    st.markdown("## 🔐 Welcome to Real Estate Swarm")
     st.markdown(
-        "Sign in with your Google account to access the **5-agent AI advisory dashboard**."
+        """
+        <style>
+        /* Hide Streamlit Header, Footer, and Sidebar */
+        #MainMenu {visibility: hidden;}
+        header {visibility: hidden;}
+        footer {visibility: hidden;}
+        [data-testid="collapsedControl"] {display: none;}
+        
+        /* App Background */
+        .stApp {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            background-attachment: fixed;
+            color: white;
+        }
+        
+        /* Glassmorphism Card on the middle column */
+        [data-testid="column"]:nth-of-type(2) {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 3rem 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 15vh;
+        }
+        
+        /* Typography */
+        .login-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: -webkit-linear-gradient(45deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+        .login-subtitle {
+            font-size: 0.95rem;
+            font-weight: 300;
+            color: #94a3b8;
+            margin-bottom: 2rem;
+            letter-spacing: 0.5px;
+            text-align: center;
+            line-height: 1.5;
+        }
+        
+        /* Button overrides */
+        .stButton>button {
+            width: 100%;
+            border-radius: 8px;
+            height: 48px;
+            font-weight: 600;
+            background: white;
+            color: #1e1b4b;
+            border: none;
+            transition: all 0.2s ease;
+        }
+        .stButton>button:hover {
+            background: #f8fafc;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+            color: #1e1b4b;
+        }
+        
+        /* Divider */
+        .divider {
+            width: 100%;
+            height: 1px;
+            background: rgba(255,255,255,0.1);
+            margin: 2rem 0;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
     )
 
-    st.warning("You must be logged in to use this application.", icon="⚠️")
-
-    if st.button("🔑 Log in with Google", use_container_width=True, type="primary"):
-        st.login()
-
-    st.caption("Powered by Streamlit native OIDC · Google Identity")
+    # Use columns to center the login card
+    col1, col2, col3 = st.columns([1, 1.2, 1])
+    
+    with col2:
+        st.markdown('<div class="login-title">🏢 RE Advisory</div>', unsafe_allow_html=True)
+        st.markdown('<div class="login-subtitle">Multi-Agent Real Estate Advisory System <br> Powered by Open-Source LLMs</div>', unsafe_allow_html=True)
+        
+        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+        
+        st.markdown(
+            "<p style='color: #cbd5e1; font-size: 0.9rem; margin-bottom: 1rem; text-align: center;'>Sign in securely to access your dashboard</p>", 
+            unsafe_allow_html=True
+        )
+        
+        if st.button("Continue with Google", use_container_width=True):
+            st.login()
+            
+        st.markdown(
+            "<p style='color: #64748b; font-size: 0.75rem; margin-top: 2rem; text-align: center;'>Protected by Streamlit Native OIDC</p>", 
+            unsafe_allow_html=True
+        )
 
 
 def render_protected_dashboard() -> None:
