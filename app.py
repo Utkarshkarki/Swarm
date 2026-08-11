@@ -255,8 +255,58 @@ def render_results(model: str, experts: list[dict[str, str]], final_advice: str)
                 st.markdown(expert["analysis"])
 
 
-def main() -> None:
+# ─────────────────────────────────────────────────────────────
+# Authentication gate using Streamlit native OIDC
+# ─────────────────────────────────────────────────────────────
+
+def render_login_page() -> None:
+    """Display a friendly login screen for unauthenticated visitors."""
+    st.set_page_config(
+        page_title="Real Estate Swarm — Sign In",
+        page_icon="🔐",
+        layout="centered",
+    )
+
+    st.markdown("## 🔐 Welcome to Real Estate Swarm")
+    st.markdown(
+        "Sign in with your Google account to access the **5-agent AI advisory dashboard**."
+    )
+
+    st.warning("You must be logged in to use this application.", icon="⚠️")
+
+    if st.button("🔑 Log in with Google", use_container_width=True, type="primary"):
+        st.login()
+
+    st.caption("Powered by Streamlit native OIDC · Google Identity")
+
+
+def render_protected_dashboard() -> None:
+    """Show the main app content for authenticated users."""
+    user_email = st.user.email  # type: ignore[attr-defined]
+    user_name = getattr(st.user, "name", user_email)
+
+    # ── Sidebar: user info + logout ──
+    with st.sidebar:
+        st.markdown(f"### 👋 Welcome, {user_name}")
+        st.caption(f"Signed in as **{user_email}**")
+        st.divider()
+        if st.button("🚪 Log out", use_container_width=True):
+            st.logout()
+
+    # ── Main dashboard ──
     render_header()
+
+    # Placeholder protected metrics
+    st.subheader("📊 Dashboard Overview")
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Queries Today", "12", "+3")
+    m2.metric("Active Agents", "5", "0")
+    m3.metric("Avg Response Time", "4.2 s", "-0.8 s")
+    m4.metric("Satisfaction", "94 %", "+2 %")
+
+    st.divider()
+
+    # Main query form & results
     submitted, payload = render_form()
 
     if not submitted:
@@ -272,6 +322,13 @@ def main() -> None:
         render_results(model, experts, final_advice)
     except Exception as exc:  # noqa: BLE001
         st.error(str(exc))
+
+
+def main() -> None:
+    if not st.user.is_logged_in:  # type: ignore[attr-defined]
+        render_login_page()
+    else:
+        render_protected_dashboard()
 
 
 if __name__ == "__main__":
