@@ -19,7 +19,8 @@ async def _round1(
 
     async def one(agent: BaseAgent) -> Tuple[str, str]:
         try:
-            return agent.agent_name, await agent.round1(query, profile)
+            res, _, _, _ = await agent.round1(query, profile)
+            return agent.agent_name, res
         except asyncio.TimeoutError:
             logger.warning("%s timed out in Round 1", agent.agent_name)
             return agent.agent_name, f"[{agent.agent_name} timed out]"
@@ -42,13 +43,15 @@ async def _round2(
     async def one(agent: BaseAgent) -> Tuple[str, str]:
         others = {n: t for n, t in round1_results.items() if n != agent.agent_name}
         try:
-            return agent.agent_name, await agent.round2(query, profile, others)
+            res, _, _, _ = await agent.round2(query, profile, others)
+            return agent.agent_name, res
         except asyncio.TimeoutError:
             logger.warning("%s timed out in Round 2", agent.agent_name)
             return agent.agent_name, f"[{agent.agent_name} timed out in Round 2]"
         except Exception as exc:
             logger.error("%s failed in Round 2: %s", agent.agent_name, exc)
             return agent.agent_name, f"[{agent.agent_name} error in Round 2: {exc}]"
+
 
     pairs = await asyncio.gather(*[one(a) for a in agents])
     return dict(pairs)

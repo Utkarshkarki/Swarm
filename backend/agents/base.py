@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import asyncio
 from abc import ABC
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
+
+try:
+    from langfuse import observe
+except ImportError:
+    from langfuse.decorators import observe
 
 from openai import AsyncOpenAI
 
@@ -48,7 +53,8 @@ class BaseAgent(ABC):
     interaction_rules: str
     focus_domains: List[str]
 
-    async def _llm(self, system: str, user: str) -> str:
+    @observe(as_type="generation")
+    async def _llm(self, system: str, user: str) -> Tuple[str, int, int, float]:
         client = AsyncOpenAI(
             base_url=settings.LLM_BASE_URL,
             api_key=settings.LLM_API_KEY,
@@ -64,7 +70,14 @@ class BaseAgent(ABC):
             ),
             timeout=settings.AGENT_TIMEOUT,
         )
-        return resp.choices[0].message.content or ""
+        content = resp.choices[0].message.content or ""
+        prompt_tokens = resp.usage.prompt_tokens if resp.usage else 0
+        completion_tokens = resp.usage.completion_tokens if resp.usage else 0
+        cost = (
+            (prompt_tokens * settings.INPUT_TOKEN_PRICE_PER_1M / 1_000_000.0)
+            + (completion_tokens * settings.OUTPUT_TOKEN_PRICE_PER_1M / 1_000_000.0)
+        )
+        return content, prompt_tokens, completion_tokens, cost
 
     def _sys_round1(self) -> str:
         return (
@@ -99,7 +112,9 @@ class BaseAgent(ABC):
             "5. Max 300 words."
         )
 
-    async def round1(self, query: str, profile: Optional[UserProfile]) -> str:
+    async def round1(
+        self, query: str, profile: Optional[UserProfile]
+    ) -> Tuple[str, int, int, float]:
         user_msg = (
             f"USER PROFILE: {_profile_context(profile)}\n\n"
             f"QUERY: {query}\n\n"
@@ -112,10 +127,11 @@ class BaseAgent(ABC):
         query: str,
         profile: Optional[UserProfile],
         others: Dict[str, str],
-    ) -> str:
+    ) -> Tuple[str, int, int, float]:
         user_msg = (
             f"USER PROFILE: {_profile_context(profile)}\n\n"
             f"ORIGINAL QUERY: {query}\n\n"
             "React to your colleagues' responses. Reference them by name. Add only new insights."
         )
         return await self._llm(self._sys_round2(others), user_msg)
+

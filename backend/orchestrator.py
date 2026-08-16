@@ -18,9 +18,16 @@ import re
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
+try:
+    from langfuse import observe
+except ImportError:
+    from langfuse.decorators import observe
+
+
 from .agents.base import BaseAgent
 from .confidence import compute_confidence
 from .models import AgentRoundOutput, UserProfile
+
 
 logger = logging.getLogger(__name__)
 
@@ -102,18 +109,18 @@ class OAISSOrchestrator:
 
     async def _safe_round1(
         self, agent: BaseAgent, query: str, profile: Optional[UserProfile]
-    ) -> Tuple[str, Signal]:
+    ) -> Tuple[str, Signal, int, int, float]:
         try:
-            raw = await asyncio.wait_for(
+            raw, p_tokens, c_tokens, cost = await asyncio.wait_for(
                 agent.round1(query, profile), timeout=90
             )
-            return _strip_signal(raw), _parse_signal(raw)
+            return _strip_signal(raw), _parse_signal(raw), p_tokens, c_tokens, cost
         except asyncio.TimeoutError:
             logger.warning("OAISS R1 timeout: %s", agent.agent_name)
-            return f"[{agent.agent_name} timed out in Round 1]", Signal(kind="NONE")
+            return f"[{agent.agent_name} timed out in Round 1]", Signal(kind="NONE"), 0, 0, 0.0
         except Exception as exc:
             logger.error("OAISS R1 error (%s): %s", agent.agent_name, exc)
-            return f"[{agent.agent_name} error: {exc}]", Signal(kind="NONE")
+            return f"[{agent.agent_name} error: {exc}]", Signal(kind="NONE"), 0, 0, 0.0
 
     async def _safe_dynamic(
         self,
@@ -121,21 +128,21 @@ class OAISSOrchestrator:
         query: str,
         profile: Optional[UserProfile],
         context: Dict[str, str],
-    ) -> Tuple[str, Signal]:
+    ) -> Tuple[str, Signal, int, int, float]:
         """Dynamic turn — agent reads all previous outputs and reacts."""
         try:
             # Build others context (exclude own previous responses)
             others = {n: t for n, t in context.items() if n != agent.agent_name}
-            raw = await asyncio.wait_for(
+            raw, p_tokens, c_tokens, cost = await asyncio.wait_for(
                 agent.round2(query, profile, others), timeout=90
             )
-            return _strip_signal(raw), _parse_signal(raw)
+            return _strip_signal(raw), _parse_signal(raw), p_tokens, c_tokens, cost
         except asyncio.TimeoutError:
             logger.warning("OAISS dynamic timeout: %s", agent.agent_name)
-            return f"[{agent.agent_name} timed out]", Signal(kind="NONE")
+            return f"[{agent.agent_name} timed out]", Signal(kind="NONE"), 0, 0, 0.0
         except Exception as exc:
             logger.error("OAISS dynamic error (%s): %s", agent.agent_name, exc)
-            return f"[{agent.agent_name} error: {exc}]", Signal(kind="NONE")
+            return f"[{agent.agent_name} error: {exc}]", Signal(kind="NONE"), 0, 0, 0.0
 
     def _enqueue_if_new(
         self,
@@ -152,14 +159,15 @@ class OAISSOrchestrator:
 
     #  Main orchestration loop 
 
+    @observe()
     async def run(
         self,
         query: str,
         profile: Optional[UserProfile],
         initial_agents: List[BaseAgent],
-    ) -> List[AgentRoundOutput]:
+    ) -> Tuple[List[AgentRoundOutput], int, int, float]:
         """
-        Full OAISS run.  Returns AgentRoundOutput list (compatible with aggregator).
+        Full OAISS run. Returns (AgentRoundOutput list, total_prompt_tokens, total_completion_tokens, total_cost).
         """
         context: Dict[str, str] = {}          # agent_name → latest response text
         round1_map: Dict[str, str] = {}       # agent_name → Round 1 text
@@ -167,6 +175,9 @@ class OAISSOrchestrator:
         turns: List[OAISSTurn] = []
         done: set[str] = set()
         turn_n = 0
+        total_prompt_tokens = 0
+        total_completion_tokens = 0
+        total_cost = 0.0
 
         # Phase 1: Round 1 (parallel, independent) 
         logger.info(
@@ -180,8 +191,11 @@ class OAISSOrchestrator:
 
         dynamic_queue: List[BaseAgent] = []
 
-        for agent, (response, signal) in zip(initial_agents, r1_results):
+        for agent, (response, signal, p_tokens, c_tokens, cost) in zip(initial_agents, r1_results):
             turn_n += 1
+            total_prompt_tokens += p_tokens
+            total_completion_tokens += c_tokens
+            total_cost += cost
             round1_map[agent.agent_name] = response
             context[agent.agent_name] = response
             done.add(agent.agent_id)
@@ -217,7 +231,10 @@ class OAISSOrchestrator:
                 turn_n, agent.agent_name, len(context),
             )
 
-            response, signal = await self._safe_dynamic(agent, query, profile, context)
+            response, signal, p_tokens, c_tokens, cost = await self._safe_dynamic(agent, query, profile, context)
+            total_prompt_tokens += p_tokens
+            total_completion_tokens += c_tokens
+            total_cost += cost
 
             round2_map[agent.agent_name] = response
             context[agent.agent_name] = response
@@ -248,12 +265,16 @@ class OAISSOrchestrator:
                     )
 
         logger.info(
-            "OAISS complete — %d turns, agents engaged: %s",
+            "OAISS complete — %d turns, agents engaged: %s | prompt_tokens=%d, completion_tokens=%d, cost=$%.6f",
             turn_n,
             [t.agent_name for t in turns],
+            total_prompt_tokens,
+            total_completion_tokens,
+            total_cost,
         )
 
-        return self._build_outputs(round1_map, round2_map)
+        return self._build_outputs(round1_map, round2_map), total_prompt_tokens, total_completion_tokens, total_cost
+
 
     #  Output builder 
 

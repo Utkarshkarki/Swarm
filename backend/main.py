@@ -87,7 +87,9 @@ async def analyze(request: AnalyzeRequest) -> AnalysisResult:
 
     # 3. OAISS dynamic orchestration (Round 1 parallel + dynamic handoff loop)
     orchestrator = OAISSOrchestrator(ALL_AGENTS)
-    agent_rounds = await orchestrator.run(request.query, profile, active_agents)
+    agent_rounds, prompt_tokens, completion_tokens, total_cost = await orchestrator.run(
+        request.query, profile, active_agents
+    )
 
     # 4. Aggregate → strict JSON output
     result = await aggregate(request.query, profile, agent_rounds)
@@ -102,9 +104,13 @@ async def analyze(request: AnalyzeRequest) -> AnalysisResult:
         round1={ar.agent_name: ar.round1 for ar in agent_rounds},
         round2={ar.agent_name: ar.round2 for ar in agent_rounds},
         output=result.model_dump(exclude={"agent_rounds"}),
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        total_cost=total_cost,
     )
 
     return result
+
 
 
 @app.post("/profile")

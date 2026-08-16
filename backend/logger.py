@@ -16,14 +16,17 @@ async def log_session(
     round1: Dict[str, str],
     round2: Dict[str, str],
     output: Dict[str, Any],
+    prompt_tokens: int = 0,
+    completion_tokens: int = 0,
+    total_cost: float = 0.0,
 ) -> None:
     now = datetime.now(timezone.utc).isoformat()
     async with aiosqlite.connect(settings.DB_PATH) as db:
         await db.execute(
             """
             INSERT INTO sessions
-                (username, query, domains_json, round1_json, round2_json, output_json, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                (username, query, domains_json, round1_json, round2_json, output_json, prompt_tokens, completion_tokens, total_cost, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 username,
@@ -32,6 +35,9 @@ async def log_session(
                 json.dumps(round1),
                 json.dumps(round2),
                 json.dumps(output),
+                prompt_tokens,
+                completion_tokens,
+                total_cost,
                 now,
             ),
         )
@@ -42,7 +48,7 @@ async def get_history(username: str, limit: int = 20) -> List[Dict[str, Any]]:
     async with aiosqlite.connect(settings.DB_PATH) as db:
         async with db.execute(
             """
-            SELECT id, username, query, output_json, created_at
+            SELECT id, username, query, output_json, prompt_tokens, completion_tokens, total_cost, created_at
             FROM sessions WHERE username = ?
             ORDER BY created_at DESC LIMIT ?
             """,
@@ -55,7 +61,10 @@ async def get_history(username: str, limit: int = 20) -> List[Dict[str, Any]]:
             "username": r[1],
             "query": r[2],
             "output": json.loads(r[3]),
-            "created_at": r[4],
+            "prompt_tokens": r[4] or 0,
+            "completion_tokens": r[5] or 0,
+            "total_cost": r[6] or 0.0,
+            "created_at": r[7],
         }
         for r in rows
     ]
@@ -65,7 +74,7 @@ async def get_all_history(limit: int = 50) -> List[Dict[str, Any]]:
     async with aiosqlite.connect(settings.DB_PATH) as db:
         async with db.execute(
             """
-            SELECT id, username, query, output_json, created_at
+            SELECT id, username, query, output_json, prompt_tokens, completion_tokens, total_cost, created_at
             FROM sessions ORDER BY created_at DESC LIMIT ?
             """,
             (limit,),
@@ -77,7 +86,11 @@ async def get_all_history(limit: int = 50) -> List[Dict[str, Any]]:
             "username": r[1],
             "query": r[2],
             "output": json.loads(r[3]),
-            "created_at": r[4],
+            "prompt_tokens": r[4] or 0,
+            "completion_tokens": r[5] or 0,
+            "total_cost": r[6] or 0.0,
+            "created_at": r[7],
         }
         for r in rows
     ]
+
