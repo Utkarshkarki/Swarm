@@ -1,427 +1,80 @@
-import os
-from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
-
-import requests
 import streamlit as st
 
+# Configure page settings
+st.set_page_config(
+    page_title="Real Estate Advisory Panel",
+    page_icon="🏘️",
+    layout="wide",
+)
 
-ENV_PATH = Path(__file__).with_name(".env")
-OPENAI_URL = "https://api.openai.com/v1/responses"
+def main():
+    st.title("🏘️ Real Estate Advisory Panel")
+    st.markdown("Enter your profile details in the sidebar and ask your real estate question below.")
 
-AGENTS = [
-    {
-        "id": "broker",
-        "title": "Real Estate Broker",
-        "focus": "market fit, location tradeoffs, pricing realism, inventory comparables, and negotiation strategy",
-        "emoji": "🏠",
-    },
-    {
-        "id": "lawyer",
-        "title": "Property Lawyer",
-        "focus": "title issues, contracts, due diligence, zoning, compliance, and documentation risk",
-        "emoji": "⚖️",
-    },
-    {
-        "id": "builder",
-        "title": "Builder",
-        "focus": "construction quality, renovation feasibility, repair risk, permits, and cost realism",
-        "emoji": "🏗️",
-    },
-    {
-        "id": "banker",
-        "title": "Banker & Mortgage Expert",
-        "focus": "affordability, financing structure, EMI pressure, credit readiness, and interest-rate sensitivity",
-        "emoji": "🏦",
-    },
-    {
-        "id": "investor",
-        "title": "Property Investor",
-        "focus": "returns, rental yield, downside protection, hold-versus-flip strategy, and exit flexibility",
-        "emoji": "📈",
-    },
-]
-
-
-def load_env_file() -> None:
-    if not ENV_PATH.exists():
-        return
-
-    for raw_line in ENV_PATH.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip()
-        if key and key not in os.environ:
-            os.environ[key] = value
-
-
-def get_settings() -> tuple[str | None, str]:
-    load_env_file()
-    return os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_MODEL", "gpt-5-mini")
-
-
-def build_case_summary(question: str, location: str, budget: str, timeline: str, goal: str) -> str:
-    return "\n".join(
-        [
-            f"Question: {question.strip()}",
-            f"Location: {location.strip() or 'Not provided'}",
-            f"Budget: {budget.strip() or 'Not provided'}",
-            f"Timeline: {timeline.strip() or 'Not provided'}",
-            f"Primary goal: {goal.strip() or 'Not provided'}",
-        ]
-    )
-
-
-def call_openai(api_key: str, model: str, prompt: str) -> str:
-    response = requests.post(
-        OPENAI_URL,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": model,
-            "input": prompt,
-        },
-        timeout=120,
-    )
-    data = response.json()
-
-    if not response.ok:
-        message = data.get("error", {}).get("message", "OpenAI request failed.")
-        raise RuntimeError(message)
-
-    text = data.get("output_text", "").strip()
-    if text:
-        return text
-
-    parts = []
-    for item in data.get("output", []):
-        for content in item.get("content", []):
-            if content.get("type") == "output_text" and content.get("text"):
-                parts.append(content["text"])
-
-    if parts:
-        return "\n".join(parts).strip()
-
-    raise RuntimeError("OpenAI returned no text output.")
-
-
-def run_specialist(agent: dict[str, str], case_summary: str, api_key: str, model: str) -> dict[str, str]:
-    prompt = "\n".join(
-        [
-            "You are one member of a 5-expert real estate advisory team.",
-            f"Your role: {agent['title']}.",
-            f"Your focus areas: {agent['focus']}.",
-            "",
-            "Review the case below and give practical advice from your specialty.",
-            "Rules:",
-            "- Stay within your role and do not pretend to know facts that require verification.",
-            "- Mention where legal, financial, construction, or market assumptions still need confirmation.",
-            "- Focus on decisions, risks, and missing information.",
-            "- Keep the advice concise and client-friendly.",
-            "",
-            case_summary,
-            "",
-            "Respond using exactly these headings:",
-            "Perspective:",
-            "Top opportunities:",
-            "Top risks:",
-            "What I need to know next:",
-            "My bottom-line advice:",
-        ]
-    )
-
-    analysis = call_openai(api_key, model, prompt)
-    return {**agent, "analysis": analysis}
-
-
-def synthesize_panel(case_summary: str, experts: list[dict[str, str]], api_key: str, model: str) -> str:
-    expert_notes = "\n\n".join(
-        f"{expert['title']}:\n{expert['analysis']}" for expert in experts
-    )
-
-    prompt = "\n".join(
-        [
-            "You are the lead coordinator of a real estate advice platform.",
-            "Five specialists have reviewed the same customer question: broker, lawyer, builder, banker, and investor.",
-            "Turn their notes into one final answer for the customer.",
-            "",
-            "Requirements:",
-            "- Start with a direct answer in 2 to 3 sentences.",
-            "- Then include sections titled Consensus, Tensions Between Experts, Recommended Next Steps, and Important Cautions.",
-            "- Clearly surface disagreements or tradeoffs.",
-            "- If information is missing, say what is missing and why it matters.",
-            "- Do not present legal, financing, or property-condition items as guaranteed facts.",
-            "",
-            "Customer case:",
-            case_summary,
-            "",
-            "Expert notes:",
-            expert_notes,
-        ]
-    )
-
-    return call_openai(api_key, model, prompt)
-
-
-def run_swarm(question: str, location: str, budget: str, timeline: str, goal: str) -> tuple[str, list[dict[str, str]], str]:
-    api_key, model = get_settings()
-    if not api_key:
-        raise RuntimeError("Missing OPENAI_API_KEY. Add it to your .env file before running the app.")
-
-    case_summary = build_case_summary(question, location, budget, timeline, goal)
-
-    with ThreadPoolExecutor(max_workers=len(AGENTS)) as executor:
-        futures = [
-            executor.submit(run_specialist, agent, case_summary, api_key, model)
-            for agent in AGENTS
-        ]
-        experts = [future.result() for future in futures]
-
-    final_advice = synthesize_panel(case_summary, experts, api_key, model)
-    return model, experts, final_advice
-
-
-def render_header() -> None:
-    st.set_page_config(
-        page_title="Real Estate Swarm",
-        page_icon="🏘️",
-        layout="wide",
-    )
-
-    st.title("Real Estate Swarm")
-    st.caption("Five AI real-estate experts brainstorm together before your customer sees the answer.")
-
-    st.markdown(
-        """
-        This prototype combines:
-
-        - a **Real Estate Broker**
-        - a **Property Lawyer**
-        - a **Builder**
-        - a **Banker & Mortgage Expert**
-        - a **Property Investor**
-        """
-    )
-
-    st.info(
-        "This is a product prototype. Legal, lending, construction, and investment points should still be validated by licensed professionals."
-    )
-
-
-def render_form() -> tuple[bool, dict[str, str]]:
-    with st.form("real_estate_query"):
-        question = st.text_area(
-            "Customer question",
-            placeholder="Should I buy a 2-bedroom apartment in Pune as a rental investment if my budget is 90 lakhs and I want stable cash flow?",
-            height=160,
-        )
-
-        col1, col2 = st.columns(2)
-        with col1:
-            location = st.text_input("Location", placeholder="Pune, India")
-            timeline = st.text_input("Timeline", placeholder="Within 3 months")
-        with col2:
-            budget = st.text_input("Budget", placeholder="90 lakhs")
-            goal = st.text_input("Primary goal", placeholder="Rental income with low legal risk")
-
-        submitted = st.form_submit_button("Run 5-agent brainstorm", use_container_width=True)
-
-    return submitted, {
-        "question": question,
-        "location": location,
-        "budget": budget,
-        "timeline": timeline,
-        "goal": goal,
-    }
-
-
-def render_results(model: str, experts: list[dict[str, str]], final_advice: str) -> None:
-    st.subheader("Final advice")
-    st.markdown(final_advice)
-    st.caption(f"Generated with {model}")
-
-    st.subheader("Expert breakdown")
-    cols = st.columns(2)
-    for index, expert in enumerate(experts):
-        with cols[index % 2]:
-            with st.container(border=True):
-                st.markdown(f"### {expert['emoji']} {expert['title']}")
-                st.caption(expert["focus"])
-                st.markdown(expert["analysis"])
-
-
-# ─────────────────────────────────────────────────────────────
-# Authentication gate using Streamlit native OIDC
-# ─────────────────────────────────────────────────────────────
-
-def render_login_page() -> None:
-    """Display a friendly login screen for unauthenticated visitors."""
-    st.set_page_config(
-        page_title="RE Advisory — Sign In",
-        page_icon="🏢",
-        layout="wide",
-        initial_sidebar_state="collapsed",
-    )
-
-    st.markdown(
-        """
-        <style>
-        /* Hide Streamlit Header, Footer, and Sidebar */
-        #MainMenu {visibility: hidden;}
-        header {visibility: hidden;}
-        footer {visibility: hidden;}
-        [data-testid="collapsedControl"] {display: none;}
-        
-        /* App Background */
-        .stApp {
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            background-attachment: fixed;
-            color: white;
-        }
-        
-        /* Glassmorphism Card on the middle column */
-        [data-testid="column"]:nth-of-type(2) {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 3rem 2rem;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 15vh;
-        }
-        
-        /* Typography */
-        .login-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            background: -webkit-linear-gradient(45deg, #38bdf8, #818cf8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-align: center;
-        }
-        .login-subtitle {
-            font-size: 0.95rem;
-            font-weight: 300;
-            color: #94a3b8;
-            margin-bottom: 2rem;
-            letter-spacing: 0.5px;
-            text-align: center;
-            line-height: 1.5;
-        }
-        
-        /* Button overrides */
-        .stButton>button {
-            width: 100%;
-            border-radius: 8px;
-            height: 48px;
-            font-weight: 600;
-            background: white;
-            color: #1e1b4b;
-            border: none;
-            transition: all 0.2s ease;
-        }
-        .stButton>button:hover {
-            background: #f8fafc;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
-            color: #1e1b4b;
-        }
-        
-        /* Divider */
-        .divider {
-            width: 100%;
-            height: 1px;
-            background: rgba(255,255,255,0.1);
-            margin: 2rem 0;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # Use columns to center the login card
-    col1, col2, col3 = st.columns([1, 1.2, 1])
-    
-    with col2:
-        st.markdown('<div class="login-title">🏢 RE Advisory</div>', unsafe_allow_html=True)
-        st.markdown('<div class="login-subtitle">Multi-Agent Real Estate Advisory System <br> Powered by Open-Source LLMs</div>', unsafe_allow_html=True)
-        
-        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-        
-        st.markdown(
-            "<p style='color: #cbd5e1; font-size: 0.9rem; margin-bottom: 1rem; text-align: center;'>Sign in securely to access your dashboard</p>", 
-            unsafe_allow_html=True
-        )
-        
-        if st.button("Continue with Google", use_container_width=True):
-            st.login()
-            
-        st.markdown(
-            "<p style='color: #64748b; font-size: 0.75rem; margin-top: 2rem; text-align: center;'>Protected by Streamlit Native OIDC</p>", 
-            unsafe_allow_html=True
-        )
-
-
-def render_protected_dashboard() -> None:
-    """Show the main app content for authenticated users."""
-    user_email = st.user.email  # type: ignore[attr-defined]
-    user_name = getattr(st.user, "name", user_email)
-
-    # ── Sidebar: user info + logout ──
+    # 1. Create the sidebar with all specified input fields
     with st.sidebar:
-        st.markdown(f"### 👋 Welcome, {user_name}")
-        st.caption(f"Signed in as **{user_email}**")
-        st.divider()
-        if st.button("🚪 Log out", use_container_width=True):
-            st.logout()
+        st.header("👤 User Profile")
+        st.markdown("Please provide your investment preferences:")
+        
+        min_budget = st.number_input("Min Budget (₹)", min_value=0, value=5000000, step=100000)
+        max_budget = st.number_input("Max Budget (₹)", min_value=0, value=15000000, step=100000)
+        
+        purpose = st.selectbox(
+            "Investment Purpose", 
+            ["Primary Residence", "Rental Income", "Capital Appreciation", "Holiday Home", "Flipping"]
+        )
+        
+        risk_appetite = st.selectbox(
+            "Risk Appetite", 
+            ["Conservative (Low Risk)", "Moderate (Medium Risk)", "Aggressive (High Risk)"]
+        )
+        
+        timeline = st.number_input("Timeline for Returns (months)", min_value=1, value=36, step=6)
+        
+        cities = st.text_input("Preferred Cities", placeholder="e.g., Pune, Mumbai, Bangalore")
+        
+        property_type = st.selectbox(
+            "Preferred Property Type", 
+            ["1-BHK Apartment", "2-BHK Apartment", "3-BHK+ Apartment", "Villa", "Plot / Land", "Commercial Space"]
+        )
 
-    # ── Main dashboard ──
-    render_header()
+    # 2. Create the main panel with a text area and the "Run Advisory Panel" button
+    st.subheader("💬 Ask the Advisor")
+    user_query = st.text_area(
+        "What is your real estate question?", 
+        placeholder='e.g., "Should I buy a 2-BHK in Pune?"',
+        height=150
+    )
 
-    # Placeholder protected metrics
-    st.subheader("📊 Dashboard Overview")
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Queries Today", "12", "+3")
-    m2.metric("Active Agents", "5", "0")
-    m3.metric("Avg Response Time", "4.2 s", "-0.8 s")
-    m4.metric("Satisfaction", "94 %", "+2 %")
+    if st.button("Run Advisory Panel", type="primary"):
+        if not user_query.strip():
+            st.warning("Please enter a question before running the advisory panel.")
+        elif not cities.strip():
+            st.warning("Please enter at least one preferred city in the sidebar.")
+        else:
+            # 3. Combine them into a single, detailed, and context-rich prompt
+            final_prompt = f"""---
+**User Profile:**
+- **Budget:** ₹{min_budget:,.0f} - ₹{max_budget:,.0f}
+- **Investment Purpose:** {purpose}
+- **Risk Appetite:** {risk_appetite}
+- **Timeline for Returns:** {timeline} months
+- **Preferred Cities:** {cities}
+- **Preferred Property Type:** {property_type}
 
-    st.divider()
+**User Query:**
+"{user_query}"
 
-    # Main query form & results
-    submitted, payload = render_form()
-
-    if not submitted:
-        return
-
-    if not payload["question"].strip():
-        st.error("Please enter the customer's real-estate question.")
-        return
-
-    try:
-        with st.spinner("The broker, lawyer, builder, banker, and investor are discussing the case..."):
-            model, experts, final_advice = run_swarm(**payload)
-        render_results(model, experts, final_advice)
-    except Exception as exc:  # noqa: BLE001
-        st.error(str(exc))
-
-
-def main() -> None:
-    if not st.user.is_logged_in:  # type: ignore[attr-defined]
-        render_login_page()
-    else:
-        render_protected_dashboard()
-
+**Task:**
+"Based on the user profile above, analyze the following query and provide a real estate investment recommendation."
+---"""
+            
+            # 4. Display the final generated prompt on the screen
+            st.success("Prompt generated successfully! Ready to be sent to the LLM.")
+            
+            st.subheader("Generated Prompt")
+            # Using code block for better readability of the prompt structure
+            st.code(final_prompt, language="markdown")
 
 if __name__ == "__main__":
     main()
