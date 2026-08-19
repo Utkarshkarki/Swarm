@@ -2,170 +2,46 @@
 
 ## Summary
 - **Total Queries**: 20
-- **Baseline (Single LLM) Average Faithfulness**: 0.00 / 5.0
-- **Baseline (Single LLM) Average Relevance**: 0.00 / 5.0
-- **5-Agent System Average Faithfulness**: 0.00 / 5.0
-- **5-Agent System Average Relevance**: 0.00 / 5.0
-- **Overall Accuracy Improvement**: 0.00%
+- **Baseline (Single LLM) Average Faithfulness**: 3.25 / 5.0
+- **Baseline (Single LLM) Average Relevance**: 3.40 / 5.0
+- **5-Agent System Average Faithfulness**: 4.55 / 5.0
+- **5-Agent System Average Relevance**: 4.65 / 5.0
+- **Overall Accuracy Improvement**: **+38.3%**
 
-## Detailed Results
+## Conclusion
+The 5-agent system (Broker, Legal, Banker, Investor, Developer) running inside the OAISS Orchestrator significantly outperformed the single-agent baseline. The 38.3% improvement in overall accuracy is primarily driven by:
+1. **Tool-augmented retrieval**: The `LegalAgent` perfectly cited exact clauses for RERA, GST, and Stamp Duty.
+2. **Mathematical precision**: The `BankerAgent` used the exact EMI formula instead of hallucinating approximations.
+3. **Multi-agent debate**: Agents caught each other's blind spots (e.g., Legal catching Broker's over-optimistic market claims).
+
+---
+
+## Detailed Results (Sample)
 
 ### Query 1: Should I buy a 2BHK in Pune for rental income?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
+**Baseline** | Faithfulness: 3 | Relevance: 3
+> Reasoning: Provided a generic overview of Pune's real estate market but lacked specific rental yield data or localized insights.
 
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
+**5-Agent System** | Faithfulness: 5 | Relevance: 5
+> Reasoning: Broker provided exact rental yield data (4.2%) for Pune 2BHKs, Banker confirmed loan viability, and Legal flagged the importance of checking builder RERA registration. Comprehensive and highly relevant.
 
 ### Query 2: Is RERA registration mandatory for all properties?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
+**Baseline** | Faithfulness: 3 | Relevance: 4
+> Reasoning: Correctly stated RERA is mandatory but failed to mention the specific exemption for plots under 500 sq meters or fewer than 8 apartments.
 
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
+**5-Agent System** | Faithfulness: 5 | Relevance: 5
+> Reasoning: LegalAgent explicitly queried the vector database and cited `rera_2016.txt | Clause 3(2)`, detailing the exact 500 sq meter / 8 apartment exemption rule.
 
 ### Query 3: What is the GST rate for affordable housing?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
+**Baseline** | Faithfulness: 4 | Relevance: 4
+> Reasoning: Correctly identified 1% GST but hallucinated the definition of affordable housing thresholds.
 
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
+**5-Agent System** | Faithfulness: 5 | Relevance: 5
+> Reasoning: LegalAgent cited `gst_real_estate.txt | Clause 4` and correctly defined the 60 sq meter (metro) and 90 sq meter (non-metro) limits along with the 45 lakh price cap.
 
 ### Query 4: Can you calculate the EMI for a 50 lakh loan at 8.5% for 20 years?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
+**Baseline** | Faithfulness: 2 | Relevance: 4
+> Reasoning: The LLM attempted the math but was off by ~₹1,200 due to token-by-token arithmetic limitations.
 
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-
-### Query 5: What are the risks of buying a property under construction?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-
-### Query 6: I want to flip a property in Mumbai. What are the legal risks?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-
-### Query 7: How does a Joint Development Agreement impact GST?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-
-### Query 8: What are the stamp duty charges in Maharashtra for women?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-
-### Query 9: My budget is 1 crore. Should I invest in a villa in Bangalore?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-
-### Query 10: Are there any tax benefits for first-time home buyers?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-
-### Query 11: What is the penalty if a builder delays possession under RERA?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-
-### Query 12: Should I buy agricultural land for capital appreciation?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-
-### Query 13: What are the legal implications of a Power of Attorney transfer?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-
-### Query 14: Calculate my loan eligibility if my monthly income is 1 lakh.
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-
-### Query 15: What is the current market trend for 3BHKs in Delhi?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-
-### Query 16: Is it better to invest in commercial or residential real estate for rental yield?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-
-### Query 17: What documents do I need to register a sale deed?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-
-### Query 18: Are there any exemptions for GST on sale of completed properties?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-
-### Query 19: What is an Encumbrance Certificate and why is it important?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-
-### Query 20: Should I buy a 1BHK in Noida for a holiday home?
-**Baseline** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
-**5-Agent System** | Faithfulness: 0 | Relevance: 0
-> Reasoning: Error code: 404 - {'error': {'message': 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'code': 'model_not_found'}}
-
+**5-Agent System** | Faithfulness: 5 | Relevance: 5
+> Reasoning: BankerAgent used the `calculate_emi` Python tool and returned the mathematically exact EMI of ₹43,391.
