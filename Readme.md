@@ -151,10 +151,33 @@ Banker Agent → HANDOFF_SIGNAL: consensus | all concerns addressed
 
 ### Prerequisites
 
-- Python 3.11+
+- Docker and Docker Compose (Recommended)
+- OR Python 3.11+ (for manual setup)
 - An LLM backend accessible via OpenAI-compatible API:
   - **Local**: [Ollama](https://ollama.ai) (recommended for development)
   - **Cloud**: OpenAI, Together AI, Groq, etc.
+
+### 🐳 Run with Docker (Recommended)
+
+The easiest way to get the entire system (Frontend, Backend, and Redis) running instantly is via Docker Compose:
+
+1. Clone the repository and configure `.env`:
+   ```bash
+   git clone https://github.com/your-username/real-estate-advisory.git
+   cd real-estate-advisory
+   cp .env.example .env
+   ```
+2. Start the services:
+   ```bash
+   docker-compose up -d --build
+   ```
+- **Frontend**: `http://localhost:8501`
+- **Backend API**: `http://localhost:8000`
+- **Interactive API Docs**: `http://localhost:8000/docs`
+
+---
+
+### 💻 Manual Local Setup
 
 ### 1. Clone & Install
 
