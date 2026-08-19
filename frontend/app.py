@@ -5,7 +5,12 @@ Connects to FastAPI backend at BACKEND_URL (default http://localhost:8000)
 from __future__ import annotations
 
 import os
+import json
+import time
+from html import escape
 from pathlib import Path
+from typing import Any, Iterator
+
 from dotenv import load_dotenv
 import requests
 import streamlit as st
@@ -134,6 +139,35 @@ div[data-testid="stButton"] > button:hover {
     background: rgba(255,255,255,0.04); border-radius: 10px;
     padding: 0.6rem 1rem; margin-bottom: 0.5rem; font-size: 0.85rem;
 }
+
+/* Live stream */
+.stream-panel {
+    background: rgba(0,0,0,0.22);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    margin: 0.6rem 0 1rem 0;
+    max-height: 320px;
+    overflow-y: auto;
+}
+.stream-event {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+.stream-event:last-child { border-bottom: 0; }
+.stream-label { color: #93c5fd; font-weight: 700; margin-right: 0.35rem; }
+.cache-hit-badge {
+    display: inline-block;
+    background: rgba(6,182,212,0.16);
+    color: #67e8f9;
+    border: 1px solid rgba(6,182,212,0.42);
+    border-radius: 999px;
+    padding: 0.35rem 0.8rem;
+    margin: 0.4rem 0 0.8rem 0;
+    font-weight: 800;
+}
 </style>
 """,
     unsafe_allow_html=True,
@@ -160,6 +194,196 @@ def _get(path: str, params: dict | None = None) -> dict | None:
     except Exception as e:
         st.error(f"Backend error: {e}")
         return None
+
+
+def _decode_sse(event_name: str | None, data_lines: list[str]) -> dict[str, Any] | None:
+    if not data_lines:
+        return None
+
+    raw_data = "\n".join(data_lines).strip()
+    if not raw_data:
+        return None
+
+    data = json.loads(raw_data)
+    if isinstance(data, dict) and "event" in data and "data" in data and event_name is None:
+        return {"event": data["event"], "data": data["data"]}
+    return {"event": event_name or "message", "data": data}
+
+
+def _stream_analyze(payload: dict) -> Iterator[dict[str, Any]]:
+    received_any = False
+
+    for attempt in range(2):
+        event_name: str | None = None
+        data_lines: list[str] = []
+
+        try:
+            with requests.post(
+                f"{BACKEND}/analyze",
+                json=payload,
+                stream=True,
+                timeout=(10, 300),
+            ) as response:
+                response.raise_for_status()
+
+                for raw_line in response.iter_lines(decode_unicode=True):
+                    if raw_line is None:
+                        continue
+                    if isinstance(raw_line, bytes):
+                        raw_line = raw_line.decode("utf-8")
+
+                    line = raw_line.strip()
+                    if not line:
+                        decoded = _decode_sse(event_name, data_lines)
+                        if decoded:
+                            received_any = True
+                            yield decoded
+                        event_name = None
+                        data_lines = []
+                        continue
+
+                    if line.startswith(":"):
+                        continue
+                    if line.startswith("event:"):
+                        event_name = line.removeprefix("event:").strip()
+                    elif line.startswith("data:"):
+                        data_lines.append(line.removeprefix("data:").strip())
+
+                decoded = _decode_sse(event_name, data_lines)
+                if decoded:
+                    yield decoded
+                return
+
+        except requests.exceptions.RequestException as exc:
+            if not received_any and attempt == 0:
+                yield {
+                    "event": "retrying",
+                    "data": {"message": f"Connection interrupted ({exc}). Retrying once..."},
+                }
+                time.sleep(1.2)
+                continue
+            yield {
+                "event": "error",
+                "data": {"message": f"Streaming connection failed: {exc}"},
+            }
+            return
+        except json.JSONDecodeError as exc:
+            yield {
+                "event": "error",
+                "data": {"message": f"Invalid SSE payload from backend: {exc}"},
+            }
+            return
+
+
+def _short(text: Any, limit: int = 260) -> str:
+    clean = " ".join(str(text or "").split())
+    if len(clean) <= limit:
+        return clean
+    return clean[: limit - 3].rstrip() + "..."
+
+
+def _event_message(event: dict[str, Any]) -> tuple[str, str]:
+    event_type = event.get("event", "message")
+    data = event.get("data") or {}
+
+    if event_type == "classification":
+        return (
+            "Classification",
+            f"Domains: {', '.join(data.get('domains', []))} | Experts: {', '.join(data.get('agents', []))}",
+        )
+    if event_type == "orchestration_start":
+        return "OAISS", data.get("message", "Expert debate started.")
+    if event_type == "agent_start":
+        return f"Round {data.get('round', '?')}", data.get("message", "Agent started.")
+    if event_type == "agent_round1":
+        return "Round 1 complete", f"{data.get('emoji', '')} {data.get('agent_name', 'Agent')}: {_short(data.get('response'))}"
+    if event_type == "debate_start":
+        queue = ", ".join(data.get("queue", [])) or "No additional debate agents"
+        return "Round 2", queue
+    if event_type == "agent_round2":
+        return "Debate turn", f"{data.get('emoji', '')} {data.get('agent_name', 'Agent')}: {_short(data.get('response'))}"
+    if event_type == "handoff":
+        return "Handoff", data.get("message", "Agent handoff requested.")
+    if event_type == "consensus":
+        return "Consensus", data.get("message", data.get("reason", "Consensus reached."))
+    if event_type == "aggregator_start":
+        return "Synthesis", data.get("message", "Synthesizing final recommendation.")
+    if event_type == "cache_hit":
+        return "Cache", data.get("message", "Instant semantic cache hit.")
+    if event_type == "retrying":
+        return "Retrying", data.get("message", "Retrying connection.")
+    if event_type == "error":
+        return "Error", data.get("message", "Streaming failed.")
+    if event_type == "final_result":
+        return "Complete", "Final recommendation ready."
+    return event_type.replace("_", " ").title(), _short(data)
+
+
+def _render_stream_events(events: list[dict[str, Any]], placeholder: Any) -> None:
+    rows = []
+    for event in events[-14:]:
+        label, detail = _event_message(event)
+        rows.append(
+            f'<div class="stream-event"><span class="stream-label">{escape(label)}</span>'
+            f"{escape(detail)}</div>"
+        )
+    placeholder.markdown(
+        f'<div class="stream-panel">{"".join(rows)}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _run_streaming_analysis(query: str, username: str) -> tuple[dict | None, bool]:
+    events: list[dict[str, Any]] = []
+    final_result: dict | None = None
+    cache_hit = False
+    feed = st.empty()
+
+    with st.status("Contacting advisory engine...", expanded=True) as status:
+        for event in _stream_analyze({"query": query, "username": username}):
+            event_type = event.get("event", "message")
+            data = event.get("data") or {}
+            events.append(event)
+            _render_stream_events(events, feed)
+
+            if event_type == "cache_hit":
+                cache_hit = True
+                status.update(label="⚡ Instant Semantic Cache Hit", state="complete")
+                status.write(data.get("message", "Served from semantic cache."))
+            elif event_type == "retrying":
+                status.update(label="Connection interrupted. Retrying...", state="running")
+                status.write(data.get("message", "Retrying once..."))
+            elif event_type == "classification":
+                status.update(label="Query classified", state="running")
+                status.write(data.get("message", "Domain classification complete."))
+            elif event_type == "agent_start":
+                status.update(label=data.get("message", "Agent analysis started."), state="running")
+            elif event_type in {"agent_round1", "agent_round2", "handoff", "consensus"}:
+                label, detail = _event_message(event)
+                status.write(f"{label}: {detail}")
+            elif event_type == "aggregator_start":
+                status.update(label="Synthesizing expert consensus...", state="running")
+                status.write(data.get("message", "Synthesizing final recommendation."))
+            elif event_type == "final_result":
+                final_result = data
+                status.update(label="Analysis complete", state="complete")
+                break
+            elif event_type == "error":
+                status.update(label="Analysis failed", state="error")
+                st.error(data.get("message", "Streaming failed."))
+                break
+
+        if final_result is None and not any(e.get("event") == "error" for e in events):
+            status.update(label="Analysis ended before a final result arrived", state="error")
+            st.error("The backend stream closed before sending final_result.")
+
+    if cache_hit:
+        st.markdown(
+            '<div class="cache-hit-badge">⚡ Instant Semantic Cache Hit</div>',
+            unsafe_allow_html=True,
+        )
+
+    return final_result, cache_hit
 
 
 def _badge(rec: str) -> str:
@@ -672,16 +896,18 @@ def main() -> None:
             if not query.strip():
                 st.warning("Please enter a real estate query.")
             else:
-                with st.spinner(
-                    "🤝 5 experts are debating your query across 2 rounds — please wait..."
-                ):
-                    result = _post("/analyze", {"query": query, "username": username})
-
+                result, cache_hit = _run_streaming_analysis(query, username)
                 if result:
                     st.session_state["result"] = result
+                    st.session_state["last_cache_hit"] = cache_hit
 
         if "result" in st.session_state:
             st.divider()
+            if st.session_state.get("last_cache_hit"):
+                st.markdown(
+                    '<div class="cache-hit-badge">⚡ Instant Semantic Cache Hit</div>',
+                    unsafe_allow_html=True,
+                )
             render_results(st.session_state["result"])
 
     with history_tab:

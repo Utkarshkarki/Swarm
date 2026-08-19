@@ -23,6 +23,12 @@ class Settings:
     INPUT_TOKEN_PRICE_PER_1M: float = float(os.getenv("INPUT_TOKEN_PRICE_PER_1M", "0.15"))
     OUTPUT_TOKEN_PRICE_PER_1M: float = float(os.getenv("OUTPUT_TOKEN_PRICE_PER_1M", "0.60"))
 
+    # Semantic Cache & Redis
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    SEMANTIC_CACHE_THRESHOLD: float = float(os.getenv("SEMANTIC_CACHE_THRESHOLD", "0.95"))
+    EMBEDDING_MODEL_NAME: str = os.getenv("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
+
 
 settings = Settings()
+
 

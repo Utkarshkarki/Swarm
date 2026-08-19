@@ -16,12 +16,13 @@ import asyncio
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
 try:
     from langfuse import observe
 except ImportError:
     from langfuse.decorators import observe
+
 
 
 from .agents.base import BaseAgent
@@ -32,6 +33,7 @@ from .models import AgentRoundOutput, UserProfile
 logger = logging.getLogger(__name__)
 
 MAX_TURNS = 10  # absolute safety cap
+STREAM_HEARTBEAT_SECONDS = 15.0
 
 #  Signal 
 
@@ -224,6 +226,8 @@ class OAISSOrchestrator:
 
         while dynamic_queue and turn_n < self.max_turns:
             agent = dynamic_queue.pop(0)
+            if agent.agent_id in done:
+                continue
             turn_n += 1
 
             logger.info(
@@ -275,8 +279,216 @@ class OAISSOrchestrator:
 
         return self._build_outputs(round1_map, round2_map), total_prompt_tokens, total_completion_tokens, total_cost
 
+    async def run_stream(
+        self,
+        query: str,
+        profile: Optional[UserProfile],
+        initial_agents: List[BaseAgent],
+    ) -> AsyncGenerator[Dict[str, Any], None]:
+        """
+        Streaming OAISS run. Yields real-time events as agents analyze, hand off, and debate.
+        """
+        context: Dict[str, str] = {}
+        round1_map: Dict[str, str] = {}
+        round2_map: Dict[str, str] = {}
+        turns: List[OAISSTurn] = []
+        done: set[str] = set()
+        turn_n = 0
+        total_prompt_tokens = 0
+        total_completion_tokens = 0
+        total_cost = 0.0
+
+        yield {
+            "event": "orchestration_start",
+            "data": {
+                "agents": [
+                    {"agent_id": a.agent_id, "agent_name": a.agent_name, "emoji": a.emoji}
+                    for a in initial_agents
+                ],
+                "message": f"Starting 2-round debate with {len(initial_agents)} expert agents...",
+            },
+        }
+
+        async def run_round1_agent(
+            agent: BaseAgent,
+        ) -> Tuple[BaseAgent, Tuple[str, Signal, int, int, float]]:
+            return agent, await self._safe_round1(agent, query, profile)
+
+        # Phase 1: Round 1 starts together, then completions stream as they finish.
+        for agent in initial_agents:
+            yield {
+                "event": "agent_start",
+                "data": {
+                    "agent_id": agent.agent_id,
+                    "agent_name": agent.agent_name,
+                    "emoji": agent.emoji,
+                    "round": 1,
+                    "message": f"{agent.emoji} {agent.agent_name} is analyzing independently...",
+                },
+            }
+
+        round1_tasks = {
+            asyncio.create_task(run_round1_agent(agent))
+            for agent in initial_agents
+        }
+
+        while round1_tasks:
+            done_tasks, round1_tasks = await asyncio.wait(
+                round1_tasks,
+                timeout=STREAM_HEARTBEAT_SECONDS,
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            if not done_tasks:
+                yield {
+                    "event": "heartbeat",
+                    "data": {
+                        "phase": "round1",
+                        "pending_agents": len(round1_tasks),
+                        "message": "Still receiving Round 1 analysis from the expert agents...",
+                    },
+                }
+                continue
+
+            for task in done_tasks:
+                agent, (response, signal, p_tokens, c_tokens, cost) = await task
+                turn_n += 1
+                total_prompt_tokens += p_tokens
+                total_completion_tokens += c_tokens
+                total_cost += cost
+                round1_map[agent.agent_name] = response
+                context[agent.agent_name] = response
+                done.add(agent.agent_id)
+                turns.append(OAISSTurn(turn_n, agent.agent_id, agent.agent_name, response, signal, is_round1=True))
+
+                yield {
+                    "event": "agent_round1",
+                    "data": {
+                        "agent_id": agent.agent_id,
+                        "agent_name": agent.agent_name,
+                        "emoji": agent.emoji,
+                        "response": response,
+                        "signal": signal.kind,
+                        "target": signal.target,
+                        "reason": signal.reason,
+                    },
+                }
+
+                if signal.kind == "HANDOFF" and signal.target and signal.target in self.all_agents:
+                    yield {
+                        "event": "handoff",
+                        "data": {
+                            "from": agent.agent_name,
+                            "to": self.all_agents[signal.target].agent_name,
+                            "reason": signal.reason,
+                            "message": f"Dynamic handoff requested from {agent.agent_name} to {self.all_agents[signal.target].agent_name}: {signal.reason}",
+                        },
+                    }
+                elif signal.kind == "CONSENSUS":
+                    yield {
+                        "event": "consensus",
+                        "data": {
+                            "agent_name": agent.agent_name,
+                            "reason": signal.reason,
+                            "message": f"Consensus signaled by {agent.agent_name}: {signal.reason}",
+                        },
+                    }
+
+        # Dynamic loop preparation
+        dynamic_queue: List[BaseAgent] = []
+        for t in turns:
+            if t.signal.kind == "HANDOFF" and t.signal.target:
+                self._enqueue_if_new(t.signal.target, dynamic_queue, done)
+
+        for agent in self.all_agents.values():
+            if agent.agent_id not in done and agent not in dynamic_queue:
+                dynamic_queue.append(agent)
+
+        yield {
+            "event": "debate_start",
+            "data": {
+                "queue": [a.agent_name for a in dynamic_queue],
+                "message": "Round 2: Cross-agent debate & rebuttal loop active...",
+            },
+        }
+
+        while dynamic_queue and turn_n < self.max_turns:
+            agent = dynamic_queue.pop(0)
+            if agent.agent_id in done:
+                continue
+            turn_n += 1
+
+            yield {
+                "event": "agent_start",
+                "data": {
+                    "agent_id": agent.agent_id,
+                    "agent_name": agent.agent_name,
+                    "emoji": agent.emoji,
+                    "round": 2,
+                    "message": f"{agent.emoji} {agent.agent_name} is evaluating peer arguments...",
+                },
+            }
+
+            response, signal, p_tokens, c_tokens, cost = await self._safe_dynamic(agent, query, profile, context)
+            total_prompt_tokens += p_tokens
+            total_completion_tokens += c_tokens
+            total_cost += cost
+
+            round2_map[agent.agent_name] = response
+            context[agent.agent_name] = response
+            done.add(agent.agent_id)
+            turns.append(OAISSTurn(turn_n, agent.agent_id, agent.agent_name, response, signal, is_round1=False))
+
+            yield {
+                "event": "agent_round2",
+                "data": {
+                    "agent_id": agent.agent_id,
+                    "agent_name": agent.agent_name,
+                    "emoji": agent.emoji,
+                    "response": response,
+                    "signal": signal.kind,
+                    "target": signal.target,
+                    "reason": signal.reason,
+                },
+            }
+
+            if signal.kind == "CONSENSUS":
+                yield {
+                    "event": "consensus",
+                    "data": {
+                        "agent_name": agent.agent_name,
+                        "reason": signal.reason,
+                        "message": f"🤝 Consensus reached by {agent.agent_name}: {signal.reason}",
+                    },
+                }
+                break
+
+            elif signal.kind == "HANDOFF" and signal.target and signal.target in self.all_agents:
+                added = self._enqueue_if_new(signal.target, dynamic_queue, done)
+                if added:
+                    yield {
+                        "event": "handoff",
+                        "data": {
+                            "from": agent.agent_name,
+                            "to": self.all_agents[signal.target].agent_name,
+                            "reason": signal.reason,
+                            "message": f"⚡ Dynamic handoff to {self.all_agents[signal.target].agent_name}: {signal.reason}",
+                        },
+                    }
+
+        agent_rounds = self._build_outputs(round1_map, round2_map)
+
+        yield {
+            "event": "orchestration_complete",
+            "data": {
+                "agent_rounds": [ar.model_dump() for ar in agent_rounds],
+                "prompt_tokens": total_prompt_tokens,
+                "completion_tokens": total_completion_tokens,
+                "total_cost": total_cost,
+            },
+        }
 
     #  Output builder 
+
 
     def _build_outputs(
         self,
@@ -286,9 +498,9 @@ class OAISSOrchestrator:
         outputs: List[AgentRoundOutput] = []
         for agent_id, agent in self.all_agents.items():
             r1 = round1.get(agent.agent_name, "")
-            if not r1:
-                continue  # agent was never called
             r2 = round2.get(agent.agent_name, "")
+            if not r1 and not r2:
+                continue  # agent was never called
             outputs.append(
                 AgentRoundOutput(
                     agent_id=agent_id,
