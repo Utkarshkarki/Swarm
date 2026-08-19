@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from .tools import execute_tool
 
 # Fix 1: use the correct import path directly — `langfuse.observe` does not exist
-from langfuse.decorators import observe
+from langfuse import observe
 from openai import AsyncOpenAI
 
 from ..config import settings

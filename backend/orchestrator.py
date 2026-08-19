@@ -18,7 +18,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
-from langfuse.decorators import observe
+from langfuse import observe
 
 
 
