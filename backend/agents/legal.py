@@ -1,4 +1,10 @@
-from .base import BaseAgent
+from __future__ import annotations
+
+from typing import Optional, Tuple
+
+from .base import BaseAgent, _profile_context
+from .tools import LEGAL_TOOLS
+from ..models import UserProfile
 
 
 class LegalAgent(BaseAgent):
@@ -27,3 +33,38 @@ class LegalAgent(BaseAgent):
         "When reacting to Banker: confirm that loan disbursement is legally conditional on clear title. "
         "When reacting to Developer: flag construction approval and OCC status as non-negotiable."
     )
+
+    def _sys_round1_tools(self) -> str:
+        return (
+            f"You are {self.agent_name}, a domain expert on a 5-member real estate advisory panel.\n\n"
+            f"ROLE: {self.role}\n"
+            f"GOAL: {self.goal}\n"
+            f"BACKSTORY: {self.backstory}\n\n"
+            f"KNOWN BIASES (self-correct when triggered): {self.known_biases}\n\n"
+            f"INTERACTION RULES: {self.interaction_rules}\n\n"
+            "TOOL USE RULES (MANDATORY):\n"
+            "- You have access to a legal document database containing actual RERA, GST, and Stamp Duty laws.\n"
+            "- ALWAYS call `search_legal_documents` before giving legal advice or quoting legal clauses.\n"
+            "- Never guess or hallucinate legal sections or tax rates.\n"
+            "- When answering, explicitly cite the exact clause and source document (e.g., '[Source: rera_2016.txt | Section 3]').\n\n"
+            "ROUND 1 RULES:\n"
+            "- Respond independently from your own expertise only.\n"
+            "- Be specific and practical; avoid vague generalities.\n"
+            "- Flag genuine uncertainty honestly.\n"
+            "- Max 350 words. End with your single most important advice."
+        )
+
+    async def round1(
+        self, query: str, profile: Optional[UserProfile]
+    ) -> Tuple[str, int, int, float]:
+        user_msg = (
+            f"USER PROFILE: {_profile_context(profile)}\n\n"
+            f"QUERY: {query}\n\n"
+            "Provide your Round 1 analysis as Legal (Advocate Meena Krishnamurthy). "
+            "Use your `search_legal_documents` tool to find exact clauses before writing your response."
+        )
+        return await self._llm_with_tools(
+            self._sys_round1_tools(),
+            user_msg,
+            LEGAL_TOOLS,
+        )

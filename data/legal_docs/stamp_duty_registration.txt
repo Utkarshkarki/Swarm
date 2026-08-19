@@ -1,0 +1,195 @@
+DOCUMENT: Stamp Duty and Registration Charges on Real Estate — India
+SOURCE: Consolidated State Stamp Act References, Registration Act 1908, and State Amendments
+VERSION: Current rates as of April 2024
+DOCUMENT_ID: stamp_duty_registration
+
+=============================================================================
+PART I — OVERVIEW OF STAMP DUTY IN INDIA
+=============================================================================
+
+CLAUSE 1 — LEGAL BASIS FOR STAMP DUTY
+
+Stamp duty on real estate transactions in India is governed by the Indian Stamp
+Act, 1899 and the respective State Stamp Acts. Stamp duty is a State subject
+under the Constitution of India (Entry 63 of the State List). Each state
+prescribes its own rates, exemptions, and concessions. The Registration Act,
+1908 governs the mandatory registration of property documents.
+
+CLAUSE 2 — MANDATORY REGISTRATION OF PROPERTY DOCUMENTS
+
+Under Section 17 of the Registration Act, 1908, the following instruments
+MUST be compulsorily registered:
+(a) Instruments of gift of immovable property;
+(b) Non-testamentary instruments purporting to create, assign, or extinguish
+    rights or interests in immovable property of value exceeding Rs. 100;
+(c) Leases of immovable property for any term exceeding 11 months.
+Failure to register renders such instruments inadmissible as evidence in court.
+
+CLAUSE 3 — STAMP DUTY PAYABLE ON MARKET VALUE OR AGREEMENT VALUE
+
+Stamp duty is payable on the higher of:
+(a) The actual consideration (agreement value), OR
+(b) The Ready Reckoner rate / Circle rate / Guidance value fixed by the
+    State Government for the area in which the property is situated.
+The state authority (District Registrar's Office) has the power to impound
+documents that are insufficiently stamped and levy deficit stamp duty + penalty.
+
+=============================================================================
+PART II — STATE-WISE STAMP DUTY RATES (RESIDENTIAL PROPERTY)
+=============================================================================
+
+CLAUSE 4 — MAHARASHTRA STAMP DUTY RATES
+
+Maharashtra (including Mumbai):
+Stamp Duty: 5% of property value for properties in Municipal Corporation areas.
+Additional Metro Cess (Mumbai): 1% additional metro cess on stamp duty value.
+Local Body Tax (LBT): 1% for Municipal Corporation limits.
+Total effective rate in Mumbai: 6% (5% stamp duty + 1% metro cess).
+Registration Charges: 1% of property value, subject to a maximum of Rs. 30,000.
+Women buyers: Concession of 1% stamp duty if property is solely in the name
+of a woman (i.e., 4% stamp duty instead of 5% in Maharashtra).
+NOTE: Maharashtra has an amnesty scheme (Abhay Yojana) for past under-stamped
+documents which allows payment of deficit duty without penalty.
+
+CLAUSE 5 — KARNATAKA STAMP DUTY RATES
+
+Karnataka (including Bengaluru):
+Stamp Duty: 5% of property value (Guidance Value).
+BBMP Area Surcharge: 10% on stamp duty for BBMP jurisdiction properties.
+Agricultural Land Cess: 3% on the stamp duty amount.
+Total Effective Rate in BBMP areas: approximately 5.6–6%.
+Registration Charges: 1% of property value.
+Women Buyer Concession: 1% reduction (i.e., 4% stamp duty) for properties
+solely in the name of a woman.
+Government Guidance Value is reviewed and revised by the Sub-Registrar offices.
+
+CLAUSE 6 — DELHI STAMP DUTY RATES
+
+Delhi:
+Stamp Duty (Men): 6% of circle rate or agreement value (whichever is higher).
+Stamp Duty (Women): 4% of circle rate or agreement value.
+Stamp Duty (Joint purchase, Man + Woman): 5%.
+Registration Charges: 1% of the property value.
+Delhi Circle Rates are divided into 8 categories (A to H) based on locality,
+ranging from Rs. 7.74 lakh/sq. metre (Category A) to Rs. 23,280/sq. metre
+(Category H).
+
+CLAUSE 7 — TELANGANA STAMP DUTY RATES
+
+Telangana (including Hyderabad):
+Stamp Duty: 4% of property value.
+Registration Fee: 0.5% of property value.
+Transfer Duty: 1.5% of property value.
+Total effective outflow: 6% (4% + 0.5% + 1.5%).
+Market Value Assessment is based on the Basic Value (BV) registered by the
+Inspector General of Registration (IGRS) Telangana on a locality-wise basis.
+
+CLAUSE 8 — TAMIL NADU STAMP DUTY RATES
+
+Tamil Nadu (including Chennai):
+Stamp Duty: 7% of property value (guideline value).
+Registration Charges: 4% of guideline value.
+Total effective rate: 11%.
+Tamil Nadu has the highest combined stamp duty + registration cost in India.
+Special Reduced Rate: Agricultural land in rural areas is charged at a lower rate.
+
+CLAUSE 9 — UTTAR PRADESH STAMP DUTY RATES
+
+Uttar Pradesh (including Noida, Greater Noida, Lucknow):
+Stamp Duty (Men): 7% of circle rate or agreement value.
+Stamp Duty (Women): 6% of circle rate or agreement value (1% concession).
+Registration Charges: 1% of property value.
+Circle Rates in UP are fixed by the District Magistrate and vary by locality.
+
+CLAUSE 10 — RAJASTHAN STAMP DUTY RATES
+
+Rajasthan (including Jaipur):
+Stamp Duty: 6% of property value.
+Registration Charges: 1% of property value.
+Women Buyer Concession: 5% stamp duty (1% reduction).
+
+=============================================================================
+PART III — EXEMPTIONS AND CONCESSIONS
+=============================================================================
+
+CLAUSE 11 — EXEMPTION FOR FIRST-TIME HOME BUYERS (SELECTED STATES)
+
+Several states provide concessions or waivers for first-time home buyers:
+Maharashtra: 1% concession on stamp duty if property value is below Rs. 45 lakh
+and buyer is a first-time purchaser (applicable under certain state schemes).
+Odisha: 100% exemption from stamp duty for women buying properties up to
+Rs. 20 lakh in value.
+UP: No specific first-time buyer concession, but the 1% women's concession applies.
+
+CLAUSE 12 — AFFORDABLE HOUSING STAMP DUTY CONCESSION
+
+Maharashtra — Properties registered under PMAY (Pradhan Mantri Awas Yojana) or
+state-notified affordable housing schemes:
+Stamp Duty: 1% only (irrespective of location).
+Registration Charges: Nil (waived for properties under PMAY).
+Condition: Property must be in an approved affordable housing project with carpet
+area not exceeding 30 sq. metres in Mumbai and 60 sq. metres elsewhere.
+
+=============================================================================
+PART IV — TRANSFER VIA POWER OF ATTORNEY
+=============================================================================
+
+CLAUSE 13 — STAMP DUTY ON POWER OF ATTORNEY TRANSFERS
+
+Power of Attorney (PoA) transfers are frequently used to evade stamp duty and
+capital gains in real estate. Courts have progressively restricted their use.
+Supreme Court Ruling in Suraj Lamp & Industries vs. State of Haryana (2011):
+Sale through General Power of Attorney (GPA) / Agreement to Sell / Will
+(popularly called GPA-ATS-WILL transactions) does NOT confer title to the buyer.
+Such transactions are NOT valid substitutes for registered sale deeds.
+Stamp Duty: PoA given for consideration is now required to be stamped at rates
+equivalent to a sale deed (i.e., full stamp duty on the market value) in most states.
+
+CLAUSE 14 — GIFT DEED STAMP DUTY
+
+Gift of immovable property to family members:
+Maharashtra: 200 rupees (nominal) if the gift is between blood relatives
+(father, mother, brother, sister, spouse, son, daughter).
+Karnataka: Nil stamp duty for gifts between specified family members.
+Delhi: 2% stamp duty for gifts to family members (reduced from full rates).
+Gift of property to non-family members is charged at full stamp duty rates.
+Gift deeds must be compulsorily registered under Section 17 of the Registration Act.
+
+=============================================================================
+PART V — REGISTRATION PROCEDURE
+=============================================================================
+
+CLAUSE 15 — DOCUMENTS REQUIRED FOR PROPERTY REGISTRATION
+
+The following documents are mandatorily required for registration of a sale deed:
+(a) Original sale deed / conveyance deed (executed on stamp paper of appropriate value)
+(b) Encumbrance Certificate (EC) for minimum 13 years (30 years preferred)
+(c) Latest property tax paid receipt
+(d) Possession letter from builder (for new properties)
+(e) Occupancy Certificate / Completion Certificate (for completed projects)
+(f) No Objection Certificate (NOC) from Housing Society (if applicable)
+(g) PAN Card of both buyer and seller
+(h) Aadhaar Card of both buyer and seller
+(i) Two passport-sized photographs each of buyer and seller
+(j) Property location plan (site plan / index plan)
+(k) Original title documents chain (if resale)
+
+CLAUSE 16 — ENCUMBRANCE CERTIFICATE — CRITICAL DUE DILIGENCE
+
+An Encumbrance Certificate (EC) is issued by the Sub-Registrar's office and
+contains a record of all transactions registered against the property during a
+specified period. An EC confirms that the property is free from any monetary
+and legal liabilities. Absence of entry in the EC does NOT guarantee clear title
+as oral transactions, unregistered agreements, and Wills are not captured in EC.
+Buyers must supplement EC verification with a title search through original
+documents and a lawyer's opinion on title.
+
+CLAUSE 17 — CIRCLE RATE vs. AGREEMENT VALUE — SECTION 43CA
+
+Where the agreement value of a property transaction is lower than the circle rate,
+Section 43CA (for builders) and Section 50C (for sellers) of the Income Tax Act
+deem the circle rate to be the consideration for the purposes of computing income
+or capital gains. This prevents under-valuation of transactions to evade taxes.
+TOLERANCE LIMIT: If the difference between the agreement value and circle rate
+is within 10% (Finance Act 2021 extended to 20% for transactions entered into
+between 12.11.2020 and 30.06.2021), the actual consideration is accepted.

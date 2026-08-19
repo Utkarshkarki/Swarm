@@ -26,9 +26,35 @@ from __future__ import annotations
 import json
 import logging
 import math
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
+
+# --- RAG Setup (Lazy Initialization) ---
+_chroma_client = None
+_legal_collection = None
+_embedding_model = None
+
+def _get_rag_components():
+    """Lazy-load ChromaDB and SentenceTransformer."""
+    global _chroma_client, _legal_collection, _embedding_model
+    if _chroma_client is None:
+        try:
+            import chromadb
+            from sentence_transformers import SentenceTransformer
+            
+            CHROMA_DB_DIR = Path(__file__).parent.parent.parent / "data" / "legal_chroma_db"
+            if not CHROMA_DB_DIR.exists():
+                logger.warning(f"ChromaDB directory not found at {CHROMA_DB_DIR}. Make sure ingest script has run.")
+                
+            _chroma_client = chromadb.PersistentClient(path=str(CHROMA_DB_DIR))
+            _legal_collection = _chroma_client.get_collection(name="legal_docs")
+            _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        except Exception as e:
+            logger.error(f"Failed to initialize RAG components: {e}")
+            raise
+    return _legal_collection, _embedding_model
 
 # ── Mock market dataset ────────────────────────────────────────────────────────
 # Keyed by (city_slug, bhk_type).  Price in ₹/sqft, rent in ₹/month per sqft.
@@ -366,6 +392,42 @@ def estimate_rental_yield(
     return result
 
 
+# ── Legal tool implementations ──────────────────────────────────────────────────
+
+def search_legal_documents(query: str, top_k: int = 4) -> Dict[str, Any]:
+    """
+    Search the local legal vector database (RERA, GST, Stamp Duty) for relevant clauses.
+    """
+    try:
+        collection, model = _get_rag_components()
+        
+        # Embed query
+        query_embedding = model.encode(query).tolist()
+        
+        # Search
+        results = collection.query(
+            query_embeddings=[query_embedding],
+            n_results=top_k
+        )
+        
+        if not results['documents'] or not results['documents'][0]:
+            return {"results": [], "message": "No relevant legal clauses found."}
+            
+        formatted_results = []
+        for doc, meta, dist in zip(results['documents'][0], results['metadatas'][0], results['distances'][0]):
+            formatted_results.append({
+                "source": meta.get("source", "unknown"),
+                "text": doc,
+                "relevance_distance": round(dist, 4)
+            })
+            
+        logger.info(f"[TOOL] search_legal_documents → returned {len(formatted_results)} results for query: '{query}'")
+        return {"results": formatted_results}
+        
+    except Exception as e:
+        logger.error(f"[TOOL] search_legal_documents failed: {e}")
+        return {"error": str(e)}
+
 # ── Tool executor (single dispatch point) ─────────────────────────────────────
 
 _TOOL_REGISTRY = {
@@ -373,6 +435,7 @@ _TOOL_REGISTRY = {
     "assess_loan_eligibility": assess_loan_eligibility,
     "fetch_property_pricing": fetch_property_pricing,
     "estimate_rental_yield": estimate_rental_yield,
+    "search_legal_documents": search_legal_documents,
 }
 
 
@@ -531,6 +594,34 @@ BROKER_TOOLS = [
                     },
                 },
                 "required": ["city", "bhk_type", "property_price_inr"],
+            },
+        },
+    },
+]
+
+LEGAL_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "search_legal_documents",
+            "description": (
+                "Search the local legal database containing actual RERA 2016 clauses, GST rules on real estate, "
+                "and Stamp Duty & Registration acts. Always call this tool to find exact clauses before answering "
+                "legal, tax, or compliance queries. Cite the source document and clause in your response."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The legal question or topic to search for (e.g. 'penalty for builder delay', 'GST rate for affordable housing').",
+                    },
+                    "top_k": {
+                        "type": "integer",
+                        "description": "Number of results to retrieve. Default is 4.",
+                    },
+                },
+                "required": ["query"],
             },
         },
     },

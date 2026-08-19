@@ -1,0 +1,248 @@
+DOCUMENT: Real Estate (Regulation and Development) Act, 2016 — RERA
+SOURCE: Ministry of Housing and Urban Affairs, Government of India
+VERSION: As amended up to 2023
+DOCUMENT_ID: rera_2016
+
+=============================================================================
+PART I — PRELIMINARY
+=============================================================================
+
+SECTION 2 — DEFINITIONS
+
+Clause 2(b) — "apartment" means any building or part of a building, including
+apartment, flat, unit, or any other name, containing a separate unit of a real
+estate project and includes any covered garage, whether or not adjacent to the
+building in which such apartment is located.
+
+Clause 2(c) — "carpet area" means the net usable floor area of an apartment,
+excluding the area covered by the external walls, areas under service shafts,
+exclusive balcony or verandah area and exclusive open terrace area, but includes
+the area covered by the internal partition walls of the apartment.
+NOTE: For the first time under law, 'carpet area' replaces 'super built-up area'
+as the mandated unit of measurement for sale transactions.
+
+Clause 2(k) — "estimated cost of real estate project" means the total cost
+involved in developing the real estate project and includes the land cost,
+taxes, fees, charges and all other expenses for completing the project.
+
+Clause 2(zn) — "promoter" means a person who constructs or causes to be
+constructed an independent building or a building consisting of apartments, or
+converts an existing building or part thereof into apartments, for the purpose
+of selling all or some of the apartments to other persons and includes a
+developer, builder, housing board, apex co-operative housing finance society,
+or a State level housing cooperative society and real estate agent.
+
+Clause 2(zr) — "real estate agent" means any person who negotiates or acts on
+behalf of one person in a transaction of transfer of his plot, apartment or
+building, as the case may be, in a real estate project, by way of sale, with
+another person or transfer of plot, apartment or building, by way of lease,
+to another person and receives remuneration or fees or any other charges for
+his services, whether as commission or otherwise.
+
+=============================================================================
+PART II — REGISTRATION OF REAL ESTATE PROJECT AND REAL ESTATE AGENTS
+=============================================================================
+
+SECTION 3 — PRIOR REGISTRATION OF REAL ESTATE PROJECT WITH REAL ESTATE
+REGULATORY AUTHORITY
+
+Clause 3(1): No promoter shall advertise, market, book, sell or offer for sale,
+or invite persons to purchase in any manner any plot, apartment or building, as
+the case may be, in any real estate project or part of it, in any planning area,
+without registering the real estate project with the Real Estate Regulatory
+Authority established under this Act.
+PENALTY: Any promoter who fails to register the project is liable to pay a
+penalty up to 10% of the estimated project cost under Section 59.
+
+Clause 3(2): Projects where the area of land proposed to be developed does not
+exceed 500 square metres or the number of apartments proposed to be developed
+does not exceed 8 inclusive of all phases are EXEMPT from mandatory RERA
+registration. Individual residential properties and buildings without sale
+of units are also exempt.
+
+Clause 3(3): Where the real estate project is to be developed in phases, every
+such phase shall be considered a standalone real estate project and the promoter
+shall obtain registration under this Act for each phase separately.
+
+SECTION 4 — APPLICATION FOR REGISTRATION OF REAL ESTATE PROJECTS
+
+Clause 4(1): Every promoter shall make an application to the Authority for
+registration of the real estate project in such form, manner, within such time
+and accompanied by such fee as may be specified by regulations made by the
+Authority.
+
+Clause 4(2)(l): The promoter shall declare in the application that 70% of the
+amounts realised for the real estate project from the allottees, from time to
+time, shall be deposited in a separate account to be maintained in a scheduled
+bank to cover the cost of construction and the land cost and shall be used only
+for that purpose.
+CRITICAL BUYER PROTECTION: The 70% escrow account rule is designed to prevent
+fund diversion and is one of RERA's most significant consumer protections.
+
+Clause 4(4): The registration granted under this section shall be valid for a
+period declared by the promoter for completion of the real estate project. The
+Authority may extend the period of registration if the project is delayed due
+to force majeure circumstances.
+
+SECTION 5 — GRANT OF REGISTRATION
+
+Clause 5(1): On receipt of the application, if the Authority is satisfied that
+the documents are in order, it shall register the real estate project and grant
+a registration number, including a login ID and password for accessing the
+website of the Authority within 30 days.
+
+SECTION 6 — EXTENSION OF REGISTRATION
+
+Clause 6: The registration granted under Section 5 may be extended by the
+Authority on an application made by the promoter due to force majeure, which
+shall, on the recommendation of the Authority, include war, flood, drought,
+fire, cyclone, earthquake or any other calamity caused by nature.
+
+SECTION 7 — REVOCATION OF REGISTRATION
+
+Clause 7(1): The Authority may revoke the registration granted under Section 5
+if the promoter:
+(a) makes wilful default in doing anything required of him by or under this Act
+    or the rules or regulations made thereunder; or
+(b) has violated any of the terms or conditions of the approval given by the
+    competent authority; or
+(c) is involved in any kind of unfair practice or irregularities.
+
+=============================================================================
+PART III — FUNCTIONS AND DUTIES OF PROMOTERS
+=============================================================================
+
+SECTION 11 — FUNCTIONS AND DUTIES OF PROMOTER
+
+Clause 11(4)(a): The promoter shall not accept a sum more than 10% of the cost
+of the apartment, plot or building as the case may be, as an advance payment or
+an application fee, from a person without first entering into a written
+agreement for sale with such person.
+
+Clause 11(4)(b): The promoter shall not make any additions or alterations in the
+sanctioned plans, layout plans and specifications and the nature of fixtures,
+fittings and amenities in respect of the apartment, plot or building, as
+approved by the competent authorities, other than in the manner provided under
+the Act or the rules and regulations made thereunder.
+
+SECTION 12 — OBLIGATIONS OF PROMOTER REGARDING VERACITY OF
+ADVERTISEMENT
+
+Clause 12: Where any person makes an advance or a deposit on the basis of the
+information contained in the notice, advertisement or prospectus, or on the
+basis of any model apartment, plot or building, and sustains any loss or damage
+by reason of any incorrect, false statement included therein, he shall be
+compensated by the promoter in the manner as provided under this Act.
+
+SECTION 13 — NO DEPOSIT OR ADVANCE TO BE TAKEN WITHOUT AGREEMENT FOR SALE
+
+Clause 13(1): A promoter shall not accept a sum more than ten per cent of the
+cost of the apartment, plot or building as the case may be, as an advance
+payment or an application fee from a person without first entering into a written
+agreement for sale with such person and register the said agreement for sale.
+
+SECTION 14 — ADHERENCE TO SANCTIONED PLANS AND PROJECT SPECIFICATIONS
+BY THE PROMOTER
+
+Clause 14(1): The proposed project shall be developed and completed by the
+promoter in accordance with the sanctioned plans, layout plans and specifications
+as approved by the competent authorities.
+
+Clause 14(3): In case any structural defect or any other defect in workmanship,
+quality or provision of services or any other obligations of the promoter as per
+the agreement for sale relating to such development is brought to the notice of
+the promoter within 5 years by the allottee from the date of handing over
+possession, it shall be the duty of the promoter to rectify such defects
+without further charge, within 30 days.
+
+SECTION 17 — TRANSFER OF TITLE
+
+Clause 17: The promoter shall execute a registered conveyance deed in favour of
+the allottee along with the undivided proportionate title in the common areas to
+the association of allottees or the competent authority, as the case may be, in
+a real estate project, and hand over the physical possession of the plot,
+apartment of building, as the case may be, to the allottees and the common
+areas to the association of allottees or the competent authority, as the case
+may be.
+
+SECTION 18 — RETURN OF AMOUNT AND COMPENSATION
+
+Clause 18(1): If the promoter fails to complete or is unable to give possession
+of an apartment, plot or building, as the case may be, in accordance with the
+terms of the agreement for sale or due to discontinuance of his business as a
+developer on account of suspension or revocation of the registration under this
+Act, or for any other reason, he shall be liable, on demand being made by the
+allottee, to return the amount received by him in respect of that apartment,
+plot, building along with interest at such rate as may be prescribed and
+compensation in the manner as provided under this Act.
+
+SECTION 19 — RIGHTS AND DUTIES OF ALLOTTEES
+
+Clause 19(1): Every allottee shall be entitled to obtain the information relating
+to sanctioned plans, layout plans and specifications approved by the competent
+authority and such other information as provided in this Act or the rules and
+regulations made thereunder.
+
+Clause 19(4): Every allottee shall have the right to claim the possession of
+apartment, plot or building as the case may be, and the association of allottees
+shall have the right to claim the possession of common areas, as per the
+declaration given by the promoter under sub-clause (C) of clause (l) of
+sub-section (2) of section 4.
+
+Clause 19(6): Every allottee shall be responsible to take possession of
+apartment, plot or building as the case may be, from the promoter after issuance
+of the Occupancy Certificate by the competent authority.
+
+=============================================================================
+PART V — REAL ESTATE REGULATORY AUTHORITY — APPELLATE TRIBUNAL
+=============================================================================
+
+SECTION 31 — COMPLAINTS
+
+Clause 31(1): Any aggrieved person may file a complaint with the Authority or
+the adjudicating officer, as the case may be, for any violation or contravention
+of the provisions of this Act or the rules and regulations made thereunder.
+
+SECTION 38 — POWERS OF AUTHORITY
+
+Clause 38(1): The Authority shall have powers to impose penalty or interest, in
+regard to any contravention of obligations cast upon the promoters, the
+allottees and the real estate agents under this Act or the rules and regulations
+made thereunder.
+
+=============================================================================
+PART VI — PENALTIES
+=============================================================================
+
+SECTION 59 — PENALTY FOR NON-REGISTRATION
+
+Clause 59(1): If any promoter contravenes the provisions of Section 3, he shall
+be liable to a penalty which may extend up to 10% of the estimated cost of the
+real estate project.
+
+Clause 59(2): If any promoter does not comply with the orders, decisions or
+directions issued under sub-section (1) or continues to violate the provisions
+of Section 3, he shall be punishable with imprisonment for a term which may
+extend up to 3 years or with fine which may extend up to a further 10% of the
+estimated cost of the real estate project, or with both.
+
+SECTION 60 — PENALTY FOR WRONGFUL DISCLOSURE
+
+Clause 60: If any promoter contravenes any other provisions of this Act, other
+than that provided under Section 3 or Section 4, he shall be liable to a penalty
+which may extend up to 5% of the estimated cost of the real estate project.
+
+SECTION 63 — PENALTY FOR REAL ESTATE AGENTS
+
+Clause 63: If any real estate agent fails to comply with or contravenes any of
+the provisions of Section 9 or Section 10, he shall be liable to a penalty of
+10,000 rupees for each day during which such default continues, which may
+cumulatively extend up to 5% of the cost of plot, apartment or buildings, as
+the case may be, of the real estate project for which the sale or purchase has
+been facilitated.
+
+SECTION 64 — PENALTY ON ALLOTTEES
+
+Clause 64: If any allottee, who fails to comply with, or contravenes any of
+the provisions of this Act or the rules or regulations made thereunder, he shall
+be liable to the penalty as may be determined by the adjudicating officer.

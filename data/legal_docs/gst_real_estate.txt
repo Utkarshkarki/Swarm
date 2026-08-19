@@ -1,0 +1,195 @@
+DOCUMENT: GST on Real Estate — Applicable Rates, Rules and Exemptions
+SOURCE: Central Board of Indirect Taxes and Customs (CBIC), Government of India
+VERSION: Consolidated as of GST Council 50th Meeting (2023)
+DOCUMENT_ID: gst_real_estate
+
+=============================================================================
+PART I — GST APPLICABILITY ON REAL ESTATE TRANSACTIONS
+=============================================================================
+
+CLAUSE 1 — SALE OF LAND EXEMPT FROM GST
+
+Schedule III of the CGST Act, 2017 explicitly excludes sale of land from the
+definition of "supply". Therefore, sale of land is EXEMPT from GST entirely.
+Land sale transactions do not attract any GST liability on either party.
+
+CLAUSE 2 — SALE OF COMPLETED PROPERTY EXEMPT FROM GST
+
+Sale of a building or apartment is exempt from GST if the sale takes place
+AFTER the issuance of Completion Certificate (CC) or after first occupancy,
+whichever is earlier. Post-CC transactions are treated as sale of immovable
+property and are outside the scope of GST.
+CRITICAL: Buyers must verify that the CC has been issued before purchase to
+ensure no GST liability arises on the transaction.
+
+CLAUSE 3 — UNDER-CONSTRUCTION PROPERTY — GST APPLICABLE
+
+For under-construction apartments and buildings where the agreement for sale is
+executed before the Completion Certificate or Occupancy Certificate is issued,
+GST is applicable on the supply of construction service. The effective GST rates
+are:
+
+(a) AFFORDABLE HOUSING: Effective GST rate of 1% (without Input Tax Credit)
+    Definition of affordable housing for GST: residential apartments with
+    carpet area up to 60 sq. metres in metropolitan cities (Delhi, NCR, Mumbai,
+    Kolkata, Chennai, Bengaluru, Hyderabad) and 90 sq. metres in other cities,
+    AND the gross amount charged is up to Rs. 45 lakhs.
+
+(b) OTHER RESIDENTIAL PROPERTIES (NON-AFFORDABLE): Effective GST rate of 5%
+    (without Input Tax Credit) for residential apartments not qualifying as
+    affordable housing.
+
+(c) COMMERCIAL PROPERTIES: Effective GST rate of 12% (with Input Tax Credit)
+    for commercial properties, shops, and offices in real estate projects.
+
+=============================================================================
+PART II — GST RATES — DETAILED BREAKDOWN
+=============================================================================
+
+CLAUSE 4 — RESIDENTIAL AFFORDABLE HOUSING RATE (1%)
+
+Notification No. 03/2019-CT(Rate) dated 29.03.2019 prescribes effective GST rate
+of 1% for supply of construction of affordable residential apartments by a promoter
+in a Real Estate Project (REP) (other than RREP) commenced on or after 1st April,
+2019. The promoter is not eligible to avail ITC on goods and services used in
+supply of such services.
+
+CLAUSE 5 — RESIDENTIAL NON-AFFORDABLE HOUSING RATE (5%)
+
+Notification No. 03/2019-CT(Rate) dated 29.03.2019 prescribes effective GST rate
+of 5% for supply of construction services of non-affordable residential apartments.
+The promoter shall not be eligible to avail ITC on goods and services used in the
+supply of such services.
+NOTE: The restriction of ITC was introduced to ensure that the builder does not
+claim credit on materials while passing GST liability to buyers.
+
+CLAUSE 6 — COMMERCIAL PROPERTY RATE (12% WITH ITC)
+
+For commercial or mixed-use projects, the supply of construction services is
+taxable at 12% GST, and the promoter is eligible to avail Input Tax Credit on
+goods and services used for such supply.
+
+CLAUSE 7 — COMPOSITE SUPPLY IN MIXED PROJECTS
+
+In Residential Real Estate Projects (RREP) where the carpet area of commercial
+apartments is not more than 15% of the total carpet area of all apartments in
+the project, the entire project is treated as residential for GST rate purposes.
+All apartments in such project shall be taxed at 1% (affordable) or 5%
+(non-affordable) rates without ITC.
+
+=============================================================================
+PART III — INPUT TAX CREDIT (ITC) RULES
+=============================================================================
+
+CLAUSE 8 — REVERSAL OF ITC ON PROJECTS STARTED BEFORE APRIL 2019
+
+For ongoing projects (commenced before 01.04.2019) where the promoter opted for
+the new rate without ITC, ITC proportionate to the ratio of unconstructed
+flats to total flats must be reversed as per the prescribed formula under
+Rule 42 of CGST Rules.
+
+CLAUSE 9 — ITC NOT AVAILABLE TO BUYERS
+
+Buyers / allottees of residential apartments cannot claim ITC on the GST paid
+on under-construction apartments. GST paid forms part of the cost of acquisition
+and is only deductible as part of cost of improvement for capital gains purposes
+on subsequent sale.
+
+=============================================================================
+PART IV — JOINT DEVELOPMENT AGREEMENTS (JDA)
+=============================================================================
+
+CLAUSE 10 — GST ON JDA — TAXABLE SUPPLY BY LANDOWNER
+
+Under a Joint Development Agreement (JDA), the landowner transfers development
+rights to the developer in exchange for constructed area (sharing arrangement).
+GST is payable by the landowner on the transfer of Development Rights (TDR) or
+Floor Space Index (FSI) to the developer.
+
+CLAUSE 11 — TIME OF SUPPLY ON JDA
+
+GST on TDR/FSI is payable by the landowner when the developer sells apartments
+to buyers (i.e., on first sale to third parties). The rate applicable is based
+on the type of apartment (1% affordable / 5% residential / 12% commercial).
+
+CLAUSE 12 — REVERSE CHARGE MECHANISM (RCM) ON JDA
+
+Under RCM, the promoter (developer) is liable to pay GST on the services received
+from the landowner by way of transfer of development rights under a JDA.
+This is covered under Notification No. 05/2019-CT(Rate) and is limited to the
+portion of TDR attributable to the unsold inventory as on the date of issuance
+of the Completion Certificate.
+
+=============================================================================
+PART V — STAMP DUTY AND GST — NON-DUPLICATION
+=============================================================================
+
+CLAUSE 13 — GST EXCLUDES STAMP DUTY
+
+The value on which GST is charged must not include stamp duty and registration
+charges as these are charges levied by the State Government and are outside the
+purview of GST. The Agreement for Sale value for GST purposes is exclusive of
+stamp duty and registration fees.
+
+=============================================================================
+PART VI — LONG TERM CAPITAL GAINS (LTCG) — INTERSECTION WITH GST
+=============================================================================
+
+CLAUSE 14 — GST PAID AS COST OF ACQUISITION FOR CAPITAL GAINS
+
+GST paid on under-construction property forms part of the cost of acquisition or
+cost of improvement for the purpose of computation of capital gains on subsequent
+sale of the property, subject to the buyer not being eligible to claim ITC.
+
+CLAUSE 15 — HOLDING PERIOD FOR LTCG — REAL ESTATE
+
+Real estate assets are treated as long-term capital assets if held for more than
+24 months (2 years). Long-term capital gains from sale of residential property
+are taxed at 20% with indexation benefit under Section 112 of the Income Tax Act.
+Under the Finance Act 2024 amendment, the LTCG rate on real estate was revised to
+12.5% WITHOUT indexation benefit (with an option to choose the more beneficial
+calculation for properties acquired before 23rd July 2024).
+
+=============================================================================
+PART VII — TDS ON REAL ESTATE — SECTION 194IA
+=============================================================================
+
+CLAUSE 16 — TDS UNDER SECTION 194IA
+
+As per Section 194IA of the Income Tax Act, every buyer of immovable property
+(other than rural agricultural land) is required to deduct TDS at the rate of
+1% from the consideration payable to the seller, if the total consideration
+exceeds Rs. 50 lakhs.
+
+CLAUSE 17 — TDS APPLICABILITY ON UNDER-CONSTRUCTION PROPERTY
+
+TDS under Section 194IA is applicable on each instalment paid by the buyer to the
+builder in an under-construction property transaction, to the extent such
+instalments together form part of consideration exceeding Rs. 50 lakhs.
+
+CLAUSE 18 — ANNUAL INFORMATION RETURN (AIS)
+
+All property transactions above Rs. 30 lakhs must be reported by the Registrar
+of Properties to the Income Tax department. Buyers and sellers should ensure
+that the transaction value reported in AIS matches the actual Agreement to Sale
+value to avoid scrutiny under Section 148A of the Income Tax Act.
+
+=============================================================================
+PART VIII — GST REGISTRATION OBLIGATION FOR BUILDERS
+=============================================================================
+
+CLAUSE 19 — MANDATORY GST REGISTRATION FOR PROMOTERS
+
+Every promoter / builder who supplies construction services (under-construction
+apartments) is required to obtain GST registration regardless of the turnover
+threshold, as per the provisions of the CGST Act, 2017 read with the Real Estate
+specific notifications. Failure to register and collect GST constitutes an offence
+under Section 122 of the CGST Act and attracts a penalty equal to 100% of the
+tax due.
+
+CLAUSE 20 — GST ON ADVANCE PAYMENT BY BUYER
+
+GST liability arises at the time of receipt of advance (booking amount) by the
+promoter from the buyer, as per Section 12 of the CGST Act (time of supply for
+services). The promoter must issue a Receipt Voucher for advances received and
+must discharge GST thereon within the prescribed due date.
