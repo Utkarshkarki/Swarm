@@ -1,22 +1,32 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from abc import ABC
 from typing import Any, Dict, List, Optional, Tuple
 
 from .tools import execute_tool
 
-try:
-    from langfuse import observe
-except ImportError:
-    from langfuse.decorators import observe
-
+# Fix 1: use the correct import path directly — `langfuse.observe` does not exist
+from langfuse.decorators import observe
 from openai import AsyncOpenAI
 
 from ..config import settings
 from ..models import UserProfile
+
+# Fix 4: module-level singleton — avoids rebuilding connection pools on every LLM call
+_openai_client: Optional[AsyncOpenAI] = None
+
+
+def _get_client() -> AsyncOpenAI:
+    """Return a cached AsyncOpenAI client (created once per process)."""
+    global _openai_client
+    if _openai_client is None:
+        _openai_client = AsyncOpenAI(
+            base_url=settings.LLM_BASE_URL,
+            api_key=settings.LLM_API_KEY,
+        )
+    return _openai_client
 
 # Foundation Agent
 def _profile_context(profile: Optional[UserProfile]) -> str:
@@ -59,10 +69,8 @@ class BaseAgent(ABC):
 
     @observe(as_type="generation")
     async def _llm(self, system: str, user: str) -> Tuple[str, int, int, float]:
-        client = AsyncOpenAI(
-            base_url=settings.LLM_BASE_URL,
-            api_key=settings.LLM_API_KEY,
-        )
+        # Fix 4: reuse singleton client instead of creating a new one per call
+        client = _get_client()
         resp = await asyncio.wait_for(
             client.chat.completions.create(
                 model=settings.LLM_MODEL,
@@ -72,7 +80,8 @@ class BaseAgent(ABC):
                 ],
                 temperature=0.7,
             ),
-            timeout=settings.AGENT_TIMEOUT,
+            # Fix 2: asyncio.wait_for requires float; AGENT_TIMEOUT is int from env
+            timeout=float(settings.AGENT_TIMEOUT),
         )
         content = resp.choices[0].message.content or ""
         prompt_tokens = resp.usage.prompt_tokens if resp.usage else 0
@@ -107,10 +116,8 @@ class BaseAgent(ABC):
         (content, total_prompt_tokens, total_completion_tokens, total_cost)
         """
         _log = logging.getLogger(__name__)
-        client = AsyncOpenAI(
-            base_url=settings.LLM_BASE_URL,
-            api_key=settings.LLM_API_KEY,
-        )
+        # Fix 4: reuse singleton client instead of creating a new one per call
+        client = _get_client()
 
         messages: List[Dict[str, Any]] = [
             {"role": "system", "content": system},
@@ -130,7 +137,8 @@ class BaseAgent(ABC):
                     tool_choice="auto",
                     temperature=0.7,
                 ),
-                timeout=settings.AGENT_TIMEOUT,
+                # Fix 2: asyncio.wait_for requires float; AGENT_TIMEOUT is int from env
+                timeout=float(settings.AGENT_TIMEOUT),
             )
 
             prompt_tokens = resp.usage.prompt_tokens if resp.usage else 0
@@ -158,8 +166,16 @@ class BaseAgent(ABC):
                 _log.info("%s: tool loop completed in %d iteration(s)", self.agent_name, iteration + 1)
                 return content, total_prompt_tokens, total_completion_tokens, total_cost
 
-            # Append assistant message (with tool_calls) to history
-            messages.append(assistant_message.model_dump(exclude_unset=True))
+            # Fix 3: build assistant message explicitly instead of model_dump(exclude_unset=True).
+            # exclude_unset=True can silently drop `content: null` which some providers
+            # require when tool_calls are present, causing 400 Bad Request errors.
+            messages.append({
+                "role": "assistant",
+                "content": assistant_message.content,  # may be None — that is correct
+                "tool_calls": [
+                    tc.model_dump() for tc in assistant_message.tool_calls
+                ],
+            })
 
             # Execute each requested tool and append results
             for tc in assistant_message.tool_calls:
@@ -185,7 +201,7 @@ class BaseAgent(ABC):
                 messages=messages,  # type: ignore[arg-type]
                 temperature=0.7,
             ),
-            timeout=settings.AGENT_TIMEOUT,
+            timeout=float(settings.AGENT_TIMEOUT),
         )
         content = resp.choices[0].message.content or ""
         prompt_tokens = resp.usage.prompt_tokens if resp.usage else 0
@@ -220,6 +236,8 @@ class BaseAgent(ABC):
         return (
             f"You are {self.agent_name} in ROUND 2 of the real estate debate.\n\n"
             f"ROLE: {self.role}\n"
+            # Fix 5: GOAL was missing — agents had no reminder of their objective in round 2
+            f"GOAL: {self.goal}\n"
             f"KNOWN BIASES: {self.known_biases}\n\n"
             f"COLLEAGUES' ROUND 1 RESPONSES:\n{panel}\n\n"
             "ROUND 2 STRICT RULES:\n"
