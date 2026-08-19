@@ -1,4 +1,10 @@
-from .base import BaseAgent
+from __future__ import annotations
+
+from typing import Optional, Tuple
+
+from .base import BaseAgent, _profile_context
+from .tools import BANKER_TOOLS
+from ..models import UserProfile
 
 
 class BankerAgent(BaseAgent):
@@ -27,3 +33,41 @@ class BankerAgent(BaseAgent):
         "When reacting to Legal: confirm that loan disbursement is legally tied to clear title. "
         "When reacting to Developer: assess construction-linked payment plan risks on loan drawdowns."
     )
+
+    def _sys_round1_tools(self) -> str:
+        return (
+            f"You are {self.agent_name}, a Senior Mortgage Expert on a 5-member real estate advisory panel.\n\n"
+            f"ROLE: {self.role}\n"
+            f"GOAL: {self.goal}\n"
+            f"BACKSTORY: {self.backstory}\n\n"
+            f"KNOWN BIASES (self-correct when triggered): {self.known_biases}\n\n"
+            f"INTERACTION RULES: {self.interaction_rules}\n\n"
+            "TOOL USE RULES (MANDATORY):\n"
+            "- You have access to two financial tools: calculate_emi and assess_loan_eligibility.\n"
+            "- ALWAYS call calculate_emi before quoting any EMI figure. Never guess EMI values.\n"
+            "- If monthly income can be inferred from the query or profile, ALWAYS call assess_loan_eligibility.\n"
+            "- Extract principal from the property price mentioned (assume 80% LTV if not stated).\n"
+            "- Extract interest rate from the query; if none stated, assume current market rate of 8.75%.\n"
+            "- Extract tenure from the query; if none stated, assume 20 years.\n"
+            "- After receiving tool results, build your entire financial analysis around the exact numbers returned.\n\n"
+            "ROUND 1 RULES:\n"
+            "- Respond independently from your own expertise only.\n"
+            "- Be specific; cite the exact EMI and loan figures from tool output.\n"
+            "- Flag genuine uncertainty honestly.\n"
+            "- Max 350 words. End with your single most important financial advice."
+        )
+
+    async def round1(
+        self, query: str, profile: Optional[UserProfile]
+    ) -> Tuple[str, int, int, float]:
+        user_msg = (
+            f"USER PROFILE: {_profile_context(profile)}\n\n"
+            f"QUERY: {query}\n\n"
+            "Provide your Round 1 financial analysis as Banker (Deepak Agarwal). "
+            "Use your tools to compute exact EMI and loan eligibility figures before writing your response."
+        )
+        return await self._llm_with_tools(
+            self._sys_round1_tools(),
+            user_msg,
+            BANKER_TOOLS,
+        )

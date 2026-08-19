@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import logging
 from abc import ABC
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
+from .tools import execute_tool
 
 try:
     from langfuse import observe
@@ -78,6 +82,121 @@ class BaseAgent(ABC):
             + (completion_tokens * settings.OUTPUT_TOKEN_PRICE_PER_1M / 1_000_000.0)
         )
         return content, prompt_tokens, completion_tokens, cost
+
+    @observe(as_type="generation")
+    async def _llm_with_tools(
+        self,
+        system: str,
+        user: str,
+        tools: List[Dict[str, Any]],
+        max_tool_iterations: int = 5,
+    ) -> Tuple[str, int, int, float]:
+        """
+        Agentic tool-calling loop.
+
+        1. Calls the LLM with the supplied tool schemas.
+        2. If the model emits tool_calls, executes each locally via execute_tool().
+        3. Appends tool results as 'tool' role messages and re-calls the LLM.
+        4. Repeats until the model returns a plain-text response (no tool_calls)
+           or max_tool_iterations is reached.
+        5. Gracefully falls back to plain _llm() if the model does not support
+           function calling (i.e. tool_calls is None/empty on the first turn).
+
+        Returns
+        -------
+        (content, total_prompt_tokens, total_completion_tokens, total_cost)
+        """
+        _log = logging.getLogger(__name__)
+        client = AsyncOpenAI(
+            base_url=settings.LLM_BASE_URL,
+            api_key=settings.LLM_API_KEY,
+        )
+
+        messages: List[Dict[str, Any]] = [
+            {"role": "system", "content": system},
+            {"role": "user",   "content": user},
+        ]
+
+        total_prompt_tokens = 0
+        total_completion_tokens = 0
+        total_cost = 0.0
+
+        for iteration in range(max_tool_iterations):
+            resp = await asyncio.wait_for(
+                client.chat.completions.create(
+                    model=settings.LLM_MODEL,
+                    messages=messages,  # type: ignore[arg-type]
+                    tools=tools,  # type: ignore[arg-type]
+                    tool_choice="auto",
+                    temperature=0.7,
+                ),
+                timeout=settings.AGENT_TIMEOUT,
+            )
+
+            prompt_tokens = resp.usage.prompt_tokens if resp.usage else 0
+            completion_tokens = resp.usage.completion_tokens if resp.usage else 0
+            total_prompt_tokens += prompt_tokens
+            total_completion_tokens += completion_tokens
+            total_cost += (
+                (prompt_tokens * settings.INPUT_TOKEN_PRICE_PER_1M / 1_000_000.0)
+                + (completion_tokens * settings.OUTPUT_TOKEN_PRICE_PER_1M / 1_000_000.0)
+            )
+
+            choice = resp.choices[0]
+            assistant_message = choice.message
+
+            # No tool calls → model is done; return its text
+            if not assistant_message.tool_calls:
+                if iteration == 0 and not (assistant_message.content or "").strip():
+                    # Model may not support tools at all — fall back to plain call
+                    _log.warning(
+                        "%s: model returned no tool_calls and no content on first turn — "
+                        "falling back to plain _llm()", self.agent_name
+                    )
+                    return await self._llm(system, user)
+                content = assistant_message.content or ""
+                _log.info("%s: tool loop completed in %d iteration(s)", self.agent_name, iteration + 1)
+                return content, total_prompt_tokens, total_completion_tokens, total_cost
+
+            # Append assistant message (with tool_calls) to history
+            messages.append(assistant_message.model_dump(exclude_unset=True))
+
+            # Execute each requested tool and append results
+            for tc in assistant_message.tool_calls:
+                tool_name = tc.function.name
+                tool_args = tc.function.arguments  # JSON string
+                _log.info("%s: calling tool '%s' with args %s", self.agent_name, tool_name, tool_args)
+
+                tool_result = await asyncio.to_thread(execute_tool, tool_name, tool_args)
+                _log.info("%s: tool '%s' result: %s", self.agent_name, tool_name, tool_result[:200])
+
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc.id,
+                    "content": tool_result,
+                })
+
+        # Safety: exceeded max iterations — do a final plain completion
+        _log.warning("%s: exceeded max_tool_iterations=%d — forcing final completion",
+                     self.agent_name, max_tool_iterations)
+        resp = await asyncio.wait_for(
+            client.chat.completions.create(
+                model=settings.LLM_MODEL,
+                messages=messages,  # type: ignore[arg-type]
+                temperature=0.7,
+            ),
+            timeout=settings.AGENT_TIMEOUT,
+        )
+        content = resp.choices[0].message.content or ""
+        prompt_tokens = resp.usage.prompt_tokens if resp.usage else 0
+        completion_tokens = resp.usage.completion_tokens if resp.usage else 0
+        total_prompt_tokens += prompt_tokens
+        total_completion_tokens += completion_tokens
+        total_cost += (
+            (prompt_tokens * settings.INPUT_TOKEN_PRICE_PER_1M / 1_000_000.0)
+            + (completion_tokens * settings.OUTPUT_TOKEN_PRICE_PER_1M / 1_000_000.0)
+        )
+        return content, total_prompt_tokens, total_completion_tokens, total_cost
 
     def _sys_round1(self) -> str:
         return (
