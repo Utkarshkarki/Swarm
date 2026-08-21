@@ -121,6 +121,26 @@ class OAISSOrchestrator:
             logger.error("OAISS R1 error (%s): %s", agent.agent_name, exc)
             return f"[{agent.agent_name} error: {exc}]", Signal(kind="NONE"), 0, 0, 0.0
 
+    async def _safe_round1_focused(
+        self,
+        agent: BaseAgent,
+        followup_question: str,
+        original_query: str,
+        profile: Optional[UserProfile],
+    ) -> Tuple[str, Signal, int, int, float]:
+        """Focused round for follow-up — calls round1_focused, no signal parsing needed."""
+        try:
+            raw, p_tokens, c_tokens, cost = await asyncio.wait_for(
+                agent.round1_focused(followup_question, original_query, profile), timeout=90
+            )
+            return raw.strip(), Signal(kind="NONE"), p_tokens, c_tokens, cost
+        except asyncio.TimeoutError:
+            logger.warning("Focused R1 timeout: %s", agent.agent_name)
+            return f"[{agent.agent_name} timed out]", Signal(kind="NONE"), 0, 0, 0.0
+        except Exception as exc:
+            logger.error("Focused R1 error (%s): %s", agent.agent_name, exc)
+            return f"[{agent.agent_name} error: {exc}]", Signal(kind="NONE"), 0, 0, 0.0
+
     async def _safe_dynamic(
         self,
         agent: BaseAgent,
@@ -509,3 +529,117 @@ class OAISSOrchestrator:
                 )
             )
         return outputs
+
+    # ── Focused follow-up mode (single round, no debate) ──────────────────────
+
+    async def run_stream_focused(
+        self,
+        followup_question: str,
+        original_query: str,
+        profile: Optional[UserProfile],
+        initial_agents: List[BaseAgent],
+    ) -> AsyncGenerator[Dict[str, Any], None]:
+        """
+        Focused streaming mode for follow-up questions.
+        Runs only one round (parallel) with a targeted system prompt.
+        No debate loop — cuts latency significantly for narrow questions.
+        """
+        round1_map: Dict[str, str] = {}
+        turn_n = 0
+        total_prompt_tokens = 0
+        total_completion_tokens = 0
+        total_cost = 0.0
+
+        yield {
+            "event": "orchestration_start",
+            "data": {
+                "agents": [
+                    {"agent_id": a.agent_id, "agent_name": a.agent_name, "emoji": a.emoji}
+                    for a in initial_agents
+                ],
+                "message": (
+                    f"Follow-up mode: {len(initial_agents)} relevant expert(s) "
+                    "answering your specific question..."
+                ),
+            },
+        }
+
+        for agent in initial_agents:
+            yield {
+                "event": "agent_start",
+                "data": {
+                    "agent_id": agent.agent_id,
+                    "agent_name": agent.agent_name,
+                    "emoji": agent.emoji,
+                    "round": 1,
+                    "message": f"{agent.emoji} {agent.agent_name} is answering your specific question...",
+                },
+            }
+
+        async def run_focused_agent(
+            agent: BaseAgent,
+        ) -> Tuple[BaseAgent, Tuple[str, Signal, int, int, float]]:
+            return agent, await self._safe_round1_focused(
+                agent, followup_question, original_query, profile
+            )
+
+        focused_tasks = {
+            asyncio.create_task(run_focused_agent(agent))
+            for agent in initial_agents
+        }
+
+        while focused_tasks:
+            done_tasks, focused_tasks = await asyncio.wait(
+                focused_tasks,
+                timeout=STREAM_HEARTBEAT_SECONDS,
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            if not done_tasks:
+                yield {
+                    "event": "heartbeat",
+                    "data": {
+                        "phase": "focused_round1",
+                        "pending_agents": len(focused_tasks),
+                        "message": "Still receiving focused analysis from expert(s)...",
+                    },
+                }
+                continue
+
+            for task in done_tasks:
+                agent, (response, signal, p_tokens, c_tokens, cost) = await task
+                turn_n += 1
+                total_prompt_tokens += p_tokens
+                total_completion_tokens += c_tokens
+                total_cost += cost
+                round1_map[agent.agent_name] = response
+
+                yield {
+                    "event": "agent_round1",
+                    "data": {
+                        "agent_id": agent.agent_id,
+                        "agent_name": agent.agent_name,
+                        "emoji": agent.emoji,
+                        "response": response,
+                        "signal": "NONE",
+                        "target": None,
+                        "reason": "",
+                    },
+                }
+
+        # Build final output — round2 is empty in focused mode
+        agent_rounds = self._build_outputs(round1_map, {})
+
+        logger.info(
+            "Focused OAISS complete — %d agents | prompt_tokens=%d, completion_tokens=%d, cost=$%.6f",
+            turn_n, total_prompt_tokens, total_completion_tokens, total_cost,
+        )
+
+        yield {
+            "event": "orchestration_complete",
+            "data": {
+                "agent_rounds": [ar.model_dump() for ar in agent_rounds],
+                "prompt_tokens": total_prompt_tokens,
+                "completion_tokens": total_completion_tokens,
+                "total_cost": total_cost,
+            },
+        }

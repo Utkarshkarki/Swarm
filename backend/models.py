@@ -20,6 +20,9 @@ class UserProfile(BaseModel):
 class AnalyzeRequest(BaseModel):
     query: str
     username: str
+    is_followup: bool = False
+    original_query: str = ""
+    followup_question: str = ""
 
 
 class ProfileUpdateRequest(BaseModel):

@@ -47,6 +47,41 @@ EXACT SCHEMA:
   "follow_up_questions": ["question 1", "question 2", "question 3"]
 }"""
 
+_FOLLOWUP_SYSTEM = """You are the Senior Real Estate Advisory Manager answering a specific follow-up question.
+
+CRITICAL RULES:
+1. The user asked a SPECIFIC question — answer it DIRECTLY in the "summary" field.
+2. Do NOT give a generic investment overview or broad recommendation.
+3. Use the expert inputs as evidence to support your direct answer.
+4. If experts lack sufficient information, say exactly what is missing.
+5. The "summary" must start with the direct answer to the question, not preamble.
+
+OUTPUT: You MUST return ONLY valid JSON — no markdown, no code fences, no extra text.
+
+EXACT SCHEMA:
+{
+  "summary": "Direct answer to the specific follow-up question",
+  "key_insights": {
+    "market": "...",
+    "investment": "...",
+    "legal": "...",
+    "financial": "...",
+    "construction": "..."
+  },
+  "risks": ["risk 1"],
+  "recommendation": "Buy" or "Avoid" or "Consider" or "Needs more info",
+  "confidence_score": integer 1-10,
+  "agent_views": [
+    {
+      "agent": "agent name",
+      "key_points": ["point 1", "point 2"],
+      "confidence": "high" or "medium" or "low",
+      "dissents_from": []
+    }
+  ],
+  "follow_up_questions": ["question 1", "question 2"]
+}"""
+
 
 def _build_prompt(
     query: str, profile: Optional[UserProfile], agent_rounds: List[AgentRoundOutput]
@@ -146,6 +181,95 @@ async def aggregate(
 
     except Exception as exc:
         logger.error("Aggregator failed: %s", exc)
+        return AnalysisResult(
+            summary=f"Aggregation failed: {exc}",
+            key_insights=KeyInsights(),
+            risks=["System error — please retry"],
+            recommendation="Needs more info",
+            confidence_score=1,
+            agent_views=[],
+            follow_up_questions=["Could you retry your query?"],
+        )
+
+
+def _build_followup_prompt(
+    followup_question: str,
+    original_query: str,
+    profile: Optional[UserProfile],
+    agent_rounds: List[AgentRoundOutput],
+) -> str:
+    profile_txt = ""
+    if profile:
+        parts = [f"Username: {profile.username}"]
+        if profile.budget_min and profile.budget_max:
+            parts.append(f"Budget ₹{profile.budget_min:,.0f}–₹{profile.budget_max:,.0f}")
+        if profile.purpose:
+            parts.append(f"Purpose: {profile.purpose}")
+        profile_txt = " | ".join(parts)
+
+    sections = []
+    for ar in agent_rounds:
+        sections.append(
+            f"=== {ar.agent_name.upper()} ===\n{ar.round1}"
+        )
+
+    return (
+        f"ORIGINAL QUESTION (context): {original_query}\n"
+        f"SPECIFIC FOLLOW-UP QUESTION: {followup_question}\n"
+        f"USER PROFILE: {profile_txt or 'Not provided'}\n\n"
+        f"EXPERT RESPONSES:\n\n" + "\n\n".join(sections) +
+        f"\n\nDirectly answer the follow-up question: \"{followup_question}\". "
+        "Output ONLY valid JSON."
+    )
+
+
+async def aggregate_followup(
+    followup_question: str,
+    original_query: str,
+    profile: Optional[UserProfile],
+    agent_rounds: List[AgentRoundOutput],
+) -> AnalysisResult:
+    """Focused aggregation for follow-up questions — answers the specific question directly."""
+    client = AsyncOpenAI(base_url=settings.LLM_BASE_URL, api_key=settings.LLM_API_KEY)
+    prompt = _build_followup_prompt(followup_question, original_query, profile, agent_rounds)
+
+    try:
+        resp = await asyncio.wait_for(
+            client.chat.completions.create(
+                model=settings.LLM_MODEL,
+                messages=[
+                    {"role": "system", "content": _FOLLOWUP_SYSTEM},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.1,  # Lower temp for factual follow-ups
+            ),
+            timeout=settings.AGENT_TIMEOUT,
+        )
+        raw = resp.choices[0].message.content or ""
+        data = _extract_json(raw)
+
+        agent_views = [
+            AgentView(
+                agent=av.get("agent", "Unknown"),
+                key_points=av.get("key_points", []),
+                confidence=av.get("confidence", "medium"),
+                dissents_from=av.get("dissents_from", []),
+            )
+            for av in data.get("agent_views", [])
+        ]
+
+        return AnalysisResult(
+            summary=data.get("summary", ""),
+            key_insights=KeyInsights(**data.get("key_insights", {})),
+            risks=data.get("risks", []),
+            recommendation=data.get("recommendation", "Needs more info"),
+            confidence_score=max(1, min(10, int(data.get("confidence_score", 5)))),
+            agent_views=agent_views,
+            follow_up_questions=data.get("follow_up_questions", []),
+        )
+
+    except Exception as exc:
+        logger.error("Follow-up aggregator failed: %s", exc)
         return AnalysisResult(
             summary=f"Aggregation failed: {exc}",
             key_insights=KeyInsights(),

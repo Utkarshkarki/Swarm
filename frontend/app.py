@@ -333,14 +333,34 @@ def _render_stream_events(events: list[dict[str, Any]], placeholder: Any) -> Non
     )
 
 
-def _run_streaming_analysis(query: str, username: str) -> tuple[dict | None, bool]:
+def _run_streaming_analysis(
+    query: str,
+    username: str,
+    is_followup: bool = False,
+    original_query: str = "",
+    followup_question: str = "",
+) -> tuple[dict | None, bool]:
     events: list[dict[str, Any]] = []
     final_result: dict | None = None
     cache_hit = False
     feed = st.empty()
 
-    with st.status("Contacting advisory engine...", expanded=True) as status:
-        for event in _stream_analyze({"query": query, "username": username}):
+    status_label = (
+        f"🔍 Answering follow-up: {followup_question[:60]}{'...' if len(followup_question) > 60 else ''}"
+        if is_followup
+        else "Contacting advisory engine..."
+    )
+
+    payload = {
+        "query": query,
+        "username": username,
+        "is_followup": is_followup,
+        "original_query": original_query,
+        "followup_question": followup_question,
+    }
+
+    with st.status(status_label, expanded=True) as status:
+        for event in _stream_analyze(payload):
             event_type = event.get("event", "message")
             data = event.get("data") or {}
             events.append(event)
@@ -403,11 +423,11 @@ def _conf_pill(conf: str) -> str:
 
 def _push_followup(q: str) -> None:
     prev_q = st.session_state.get("last_query", "").strip()
-    if prev_q and not any(phrase in q.lower() for phrase in ["regarding", "follow-up", "in reference to"]):
-        full_query = f"Follow-up regarding '{prev_q}':\n{q}"
-    else:
-        full_query = q
-    st.session_state["pending_query"] = full_query
+    # Store metadata separately so backend gets clean, structured context
+    st.session_state["pending_query"] = q          # text area shows just the specific question
+    st.session_state["followup_is_followup"] = True
+    st.session_state["followup_original_query"] = prev_q
+    st.session_state["followup_question"] = q
     st.session_state["auto_submit"] = True
     st.rerun()
 
@@ -883,6 +903,17 @@ def main() -> None:
             st.session_state["query_input_box"] = st.session_state.pop("pending_query")
 
         auto_submit = st.session_state.pop("auto_submit", False)
+        # Pop follow-up metadata (set by _push_followup)
+        is_followup = st.session_state.pop("followup_is_followup", False)
+        original_query = st.session_state.pop("followup_original_query", "")
+        followup_question = st.session_state.pop("followup_question", "")
+
+        if is_followup:
+            st.markdown(
+                '<div class="cache-hit-badge" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#c4b5fd;">'
+                '🔍 Follow-up Mode — Focused answer from relevant experts only</div>',
+                unsafe_allow_html=True,
+            )
 
         query = st.text_area(
             "Your real estate query",
@@ -902,8 +933,16 @@ def main() -> None:
             if not query.strip():
                 st.warning("Please enter a real estate query.")
             else:
-                st.session_state["last_query"] = query
-                result, cache_hit = _run_streaming_analysis(query, username)
+                # For non-follow-up runs, update last_query so future follow-ups have context
+                if not is_followup:
+                    st.session_state["last_query"] = query
+                result, cache_hit = _run_streaming_analysis(
+                    query,
+                    username,
+                    is_followup=is_followup,
+                    original_query=original_query,
+                    followup_question=followup_question if is_followup else "",
+                )
                 if result:
                     st.session_state["result"] = result
                     st.session_state["last_cache_hit"] = cache_hit

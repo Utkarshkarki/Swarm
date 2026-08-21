@@ -249,6 +249,22 @@ class BaseAgent(ABC):
             "5. Max 300 words."
         )
 
+    def _sys_followup(self, followup_question: str, original_query: str) -> str:
+        """Focused system prompt for follow-up questions — narrow, direct, no broad analysis."""
+        return (
+            f"You are {self.agent_name}, a domain expert on a real estate advisory panel.\n\n"
+            f"ROLE: {self.role}\n"
+            f"GOAL: {self.goal}\n\n"
+            "FOLLOW-UP MODE — STRICT RULES:\n"
+            f"1. Answer ONLY this specific question: \"{followup_question}\"\n"
+            f"2. The original context was: \"{original_query[:300]}\"\n"
+            "3. Be specific, factual, and direct. Do NOT give a broad investment overview.\n"
+            "4. If this question is outside your domain, briefly say so in one sentence.\n"
+            f"5. If you don't have enough information, say what specific information is missing.\n"
+            f"6. Stay within your domain: {', '.join(self.focus_domains)}.\n"
+            "7. Max 250 words. Lead with the direct answer, then supporting details."
+        )
+
     async def round1(
         self, query: str, profile: Optional[UserProfile]
     ) -> Tuple[str, int, int, float]:
@@ -258,6 +274,21 @@ class BaseAgent(ABC):
             f"Provide your Round 1 analysis as {self.agent_name}."
         )
         return await self._llm(self._sys_round1(), user_msg)
+
+    async def round1_focused(
+        self,
+        followup_question: str,
+        original_query: str,
+        profile: Optional[UserProfile],
+    ) -> Tuple[str, int, int, float]:
+        """Single-round focused response for follow-up questions."""
+        user_msg = (
+            f"USER PROFILE: {_profile_context(profile)}\n\n"
+            f"ORIGINAL QUERY (context): {original_query}\n\n"
+            f"SPECIFIC FOLLOW-UP QUESTION: {followup_question}\n\n"
+            f"Answer the specific follow-up question directly as {self.agent_name}."
+        )
+        return await self._llm(self._sys_followup(followup_question, original_query), user_msg)
 
     async def round2(
         self,

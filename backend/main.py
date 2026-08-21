@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from .aggregator import aggregate
+from .aggregator import aggregate, aggregate_followup
 from .agents.banker import BankerAgent
 from .agents.broker import BrokerAgent
 from .agents.developer import DeveloperAgent
@@ -84,80 +84,123 @@ async def analyze(payload: AnalyzeRequest, http_request: Request):
             return _sse(event, data)
 
         try:
-            # 1. Semantic Cache check
-            cached_result, similarity = await semantic_cache.lookup(payload.query)
-            if cached_result is not None and similarity is not None:
-                cached_payload = AnalysisResult.model_validate(cached_result).model_dump(mode="json")
-                yield await emit(
-                    "cache_hit",
-                    {
-                        "similarity": similarity,
-                        "message": f"Instant Semantic Cache Hit ({similarity * 100:.1f}% similarity)",
-                    },
-                )
-                yield await emit("final_result", cached_payload)
-                return
+            # 1. Semantic Cache check (skip for follow-ups — they are always unique)
+            if not payload.is_followup:
+                cached_result, similarity = await semantic_cache.lookup(payload.query)
+                if cached_result is not None and similarity is not None:
+                    cached_payload = AnalysisResult.model_validate(cached_result).model_dump(mode="json")
+                    yield await emit(
+                        "cache_hit",
+                        {
+                            "similarity": similarity,
+                            "message": f"Instant Semantic Cache Hit ({similarity * 100:.1f}% similarity)",
+                        },
+                    )
+                    yield await emit("final_result", cached_payload)
+                    return
 
             # 2. Load persistent user profile
             profile = await get_profile(payload.username)
 
-            # 3. Classify query → active domains + agents
-            domains = classify_query(payload.query)
-            agent_ids = get_active_agent_ids(domains)
-            active_agents = [ALL_AGENTS[aid] for aid in agent_ids if aid in ALL_AGENTS]
-
-            if not active_agents:
-                active_agents = list(ALL_AGENTS.values())
-                domains = ["market", "investment", "legal", "financial", "construction"]
-
-            yield await emit(
-                "classification",
-                {
-                    "domains": domains,
-                    "agents": [a.agent_name for a in active_agents],
-                    "message": f"Classified domains: {domains}",
-                },
-            )
-
-            # 4. OAISS dynamic streaming orchestration
             orchestrator = OAISSOrchestrator(ALL_AGENTS)
             agent_rounds_data: List[Dict[str, Any]] = []
             prompt_tokens = 0
             completion_tokens = 0
             total_cost = 0.0
 
-            async for event in orchestrator.run_stream(payload.query, profile, active_agents):
-                if event.get("event") == "orchestration_complete":
-                    metrics_payload = event.get("data", {})
-                    agent_rounds_data = metrics_payload.get("agent_rounds", [])
-                    prompt_tokens = metrics_payload.get("prompt_tokens", 0)
-                    completion_tokens = metrics_payload.get("completion_tokens", 0)
-                    total_cost = metrics_payload.get("total_cost", 0.0)
-                yield await emit(event["event"], event.get("data", {}))
+            if payload.is_followup and payload.followup_question:
+                # ── Follow-up path: focused single-round, relevant agents only ──────
+                followup_q = payload.followup_question
+                original_q = payload.original_query or payload.query
 
-            # Reconstruct typed AgentRoundOutput objects for aggregation
-            agent_rounds = [AgentRoundOutput(**ar) for ar in agent_rounds_data]
+                # Classify only the specific follow-up question (not the wrapped string)
+                domains = classify_query(followup_q)
+                if not domains:
+                    domains = classify_query(original_q)
+                agent_ids = get_active_agent_ids(domains)
+                active_agents = [ALL_AGENTS[aid] for aid in agent_ids if aid in ALL_AGENTS]
+                if not active_agents:
+                    active_agents = list(ALL_AGENTS.values())
+                    domains = ["market", "investment", "legal", "financial", "construction"]
 
-            # 5. Aggregate → strict JSON output
-            yield await emit(
-                "aggregator_start",
-                {
-                    "message": "Senior Advisor is synthesizing expert consensus and resolving conflicts...",
-                },
-            )
-            result = await aggregate(payload.query, profile, agent_rounds)
-            result.active_domains = domains
-            result.agent_rounds = agent_rounds
+                yield await emit(
+                    "classification",
+                    {
+                        "domains": domains,
+                        "agents": [a.agent_name for a in active_agents],
+                        "message": f"Follow-up mode — {len(active_agents)} expert(s) for: {domains}",
+                    },
+                )
+
+                async for event in orchestrator.run_stream_focused(
+                    followup_q, original_q, profile, active_agents
+                ):
+                    if event.get("event") == "orchestration_complete":
+                        metrics_payload = event.get("data", {})
+                        agent_rounds_data = metrics_payload.get("agent_rounds", [])
+                        prompt_tokens = metrics_payload.get("prompt_tokens", 0)
+                        completion_tokens = metrics_payload.get("completion_tokens", 0)
+                        total_cost = metrics_payload.get("total_cost", 0.0)
+                    yield await emit(event["event"], event.get("data", {}))
+
+                agent_rounds = [AgentRoundOutput(**ar) for ar in agent_rounds_data]
+
+                yield await emit(
+                    "aggregator_start",
+                    {"message": "Senior Advisor is composing a direct answer to your question..."},
+                )
+                result = await aggregate_followup(followup_q, original_q, profile, agent_rounds)
+                result.active_domains = domains
+                result.agent_rounds = agent_rounds
+
+            else:
+                # ── Full OAISS path: all domains, 2-round debate ──────────────────
+                domains = classify_query(payload.query)
+                agent_ids = get_active_agent_ids(domains)
+                active_agents = [ALL_AGENTS[aid] for aid in agent_ids if aid in ALL_AGENTS]
+
+                if not active_agents:
+                    active_agents = list(ALL_AGENTS.values())
+                    domains = ["market", "investment", "legal", "financial", "construction"]
+
+                yield await emit(
+                    "classification",
+                    {
+                        "domains": domains,
+                        "agents": [a.agent_name for a in active_agents],
+                        "message": f"Classified domains: {domains}",
+                    },
+                )
+
+                async for event in orchestrator.run_stream(payload.query, profile, active_agents):
+                    if event.get("event") == "orchestration_complete":
+                        metrics_payload = event.get("data", {})
+                        agent_rounds_data = metrics_payload.get("agent_rounds", [])
+                        prompt_tokens = metrics_payload.get("prompt_tokens", 0)
+                        completion_tokens = metrics_payload.get("completion_tokens", 0)
+                        total_cost = metrics_payload.get("total_cost", 0.0)
+                    yield await emit(event["event"], event.get("data", {}))
+
+                agent_rounds = [AgentRoundOutput(**ar) for ar in agent_rounds_data]
+
+                yield await emit(
+                    "aggregator_start",
+                    {"message": "Senior Advisor is synthesizing expert consensus and resolving conflicts..."},
+                )
+                result = await aggregate(payload.query, profile, agent_rounds)
+                result.active_domains = domains
+                result.agent_rounds = agent_rounds
+
+                # Save full queries to Semantic Cache
+                final_dict_for_cache = result.model_dump(mode="json")
+                await semantic_cache.set(payload.query, final_dict_for_cache)
 
             final_dict = result.model_dump(mode="json")
 
-            # 6. Save to Semantic Cache
-            await semantic_cache.set(payload.query, final_dict)
-
-            # 7. Persist session log to SQLite
+            # Persist session log to SQLite
             await log_session(
                 username=payload.username,
-                query=payload.query,
+                query=payload.followup_question if payload.is_followup else payload.query,
                 domains=domains,
                 round1={ar.agent_name: ar.round1 for ar in agent_rounds},
                 round2={ar.agent_name: ar.round2 for ar in agent_rounds},
@@ -167,7 +210,6 @@ async def analyze(payload: AnalyzeRequest, http_request: Request):
                 total_cost=total_cost,
             )
 
-            # 8. Emit final complete payload
             yield await emit("final_result", final_dict)
 
         except asyncio.CancelledError:
