@@ -407,7 +407,7 @@ def _push_followup(q: str) -> None:
         full_query = f"Follow-up regarding '{prev_q}':\n{q}"
     else:
         full_query = q
-    st.session_state["query_input_box"] = full_query
+    st.session_state["pending_query"] = full_query
     st.session_state["auto_submit"] = True
     st.rerun()
 
@@ -879,6 +879,9 @@ def main() -> None:
     main_tab, history_tab = st.tabs(["🔍 Analyze", "📜 History"])
 
     with main_tab:
+        if "pending_query" in st.session_state:
+            st.session_state["query_input_box"] = st.session_state.pop("pending_query")
+
         auto_submit = st.session_state.pop("auto_submit", False)
 
         query = st.text_area(
