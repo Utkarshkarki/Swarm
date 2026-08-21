@@ -402,8 +402,14 @@ def _conf_pill(conf: str) -> str:
 
 
 def _push_followup(q: str) -> None:
-    st.session_state["query_input"] = q
+    prev_q = st.session_state.get("last_query", "").strip()
+    if prev_q and not any(phrase in q.lower() for phrase in ["regarding", "follow-up", "in reference to"]):
+        full_query = f"Follow-up regarding '{prev_q}':\n{q}"
+    else:
+        full_query = q
+    st.session_state["query_input_box"] = full_query
     st.session_state["auto_submit"] = True
+    st.rerun()
 
 
 # ── Login screen ───────────────────────────────────────────────────────────────
@@ -817,8 +823,8 @@ def render_results(result: dict) -> None:
     with tab_followup:
         st.markdown("**Click any question to auto-fill the query box:**")
         fuqs = result.get("follow_up_questions", [])
-        for fuq in fuqs:
-            if st.button(f"→ {fuq}", key=f"fuq_{fuq[:40]}"):
+        for i, fuq in enumerate(fuqs):
+            if st.button(f"→ {fuq}", key=f"fuq_{i}_{abs(hash(fuq))}"):
                 _push_followup(fuq)
         if not fuqs:
             st.info("No follow-up questions generated.")
@@ -873,13 +879,10 @@ def main() -> None:
     main_tab, history_tab = st.tabs(["🔍 Analyze", "📜 History"])
 
     with main_tab:
-        # Query input
-        default_q = st.session_state.pop("query_input", "")
         auto_submit = st.session_state.pop("auto_submit", False)
 
         query = st.text_area(
             "Your real estate query",
-            value=default_q,
             placeholder=(
                 "Should I buy a 2-BHK in Pune for rental investment? "
                 "Budget ₹90L, want stable cash flow within 6 months."
@@ -896,6 +899,7 @@ def main() -> None:
             if not query.strip():
                 st.warning("Please enter a real estate query.")
             else:
+                st.session_state["last_query"] = query
                 result, cache_hit = _run_streaming_analysis(query, username)
                 if result:
                     st.session_state["result"] = result
