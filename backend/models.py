@@ -71,5 +71,6 @@ class AnalysisResult(BaseModel):
     confidence_score: int = Field(ge=1, le=10)
     agent_views: List[AgentView]
     follow_up_questions: List[str]
+    clarifying_questions: List[str] = []
     active_domains: List[str] = []
     agent_rounds: List[AgentRoundOutput] = []
