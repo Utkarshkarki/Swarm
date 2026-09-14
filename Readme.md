@@ -1,4 +1,4 @@
-#  Real Estate Advisory — Multi-Agent AI System
+#  RealEstate Advisory — Multi-Agent AI System
 
 <div align="center">
 
